@@ -1,1 +1,1 @@
-# embedded-linux-and-device-drivers-for-ather
+# Embedded Linux and Device Drivers
