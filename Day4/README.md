@@ -1,13 +1,19 @@
 # Day 4 — RTOS Concepts and Real-Time on the Board
 
-> `# on the HOST` = your laptop (build/flash the Nucleo, build PRU firmware) · `# on the BOARD` = the BeagleBone (PRU, cyclictest).
-> **Labs 13–14 use the STM32 Nucleo, not the BeagleBone.**
-
 ## Agenda for the day
 **Morning (concepts)**
-- Why an RTOS: determinism, bounded latency, why general-purpose Linux is not real time by default.
-- Core mechanisms: tasks and priorities, preemptive scheduling, context-switch cost, semaphores, mutexes, queues, **priority inversion and inheritance**.
-- Measuring real time: worst-case execution time, jitter, latency — measure, don't assume.
+- Why an RTOS?
+  - determinism
+  - bounded latency
+  - why general-purpose Linux is not real time by default.
+- Core mechanisms:
+  - tasks and priorities
+  - preemptive scheduling
+  - context-switch cost
+  - semaphores
+  - mutexes
+  - queues,
+  - priority inversion and inheritance
 
 **Afternoon (labs)** — run tasks, break and fix priority inversion, and measure real time on the PRU and PREEMPT_RT.
 
@@ -26,51 +32,56 @@
 ---
 
 ## Morning — Full Session Content (~4 hours)
-*Detailed teaching material. Timings in brackets. Cues: `[WB]` draw it, `[Q]` ask the room, `[DEMO]` show live. The five parts build one chain: **need → mechanism → hazard → proof.***
 
-**Time map:** Framing 10 · Why an RTOS 50 · Tasks & scheduling 60 · Synchronization 55 · Priority inversion 45 · Measuring real time 40 · Wrap 10 (≈ 4 h with a break).
 
----
+**when is "usually fast" not good enough, and what do you use instead?**
+<pre>
+- Contrast two systems that both react to an event in software. 
+  - A doorbell chime that plays 30 ms late is fine, nobody notices
+  - An airbag that fires 30 ms late is a catastrophe
+- Same latency, opposite tolerance for lateness
+- Embedded work is full of the second kind
+  - a motor commutation that must switch on time or the motor stalls
+  - a sensor that must be sampled every 1 ms or the control loop goes unstable
+  - a safety cutoff that must act within a bounded window.
+</pre>
 
-### 0. Framing (10 min)
-The morning answers one question: **when is "usually fast" not good enough, and what do you use instead?**
+**"Real time" does not mean "fast."** 
+<pre>
+-  This is the single most important idea of the day and the most common misconception
+- Real time means *the system provably meets its deadline every time, including the worst case
+- A slow system with a guaranteed ceiling is real time, a blazing-fast system that occasionally 
+  stalls is not.
+- *Hard*: a miss is a system failure. Airbag, motor commutation, flight control. 
+    - The deadline is a correctness requirement.
+- *Firm*: a late result is useless but not catastrophic, you discard it. 
+  - A video frame that arrives after its display slot
+- *Soft*: lateness degrades quality but the result still has value. 
+   - A UI that stutters, a log that arrives late
+</pre>
 
-Contrast two systems that both react to an event in software. A doorbell chime that plays 30 ms late is fine; nobody notices. An airbag that fires 30 ms late is a catastrophe. Same shape of problem, opposite tolerance for lateness. Embedded work is full of the second kind: a motor commutation that must switch on time or the motor stalls, a sensor that must be sampled every 1 ms or the control loop goes unstable, a safety cutoff that must act within a bounded window.
-
-`[Q]` Go around the room: each person names one real deadline from their own work. Write them on the board and keep referring back, by the end of the morning they should be able to say, for each, whether it needs an RTOS, a PRU, or whether ordinary Linux is fine.
-
-Lay out the map for the morning: **why an RTOS → how scheduling works → how tasks talk safely → the classic failure (priority inversion) → how you prove timing with measurement.** The afternoon labs map one-to-one onto the last three.
-
----
-
-### 1. Why an RTOS — determinism and bounded latency (50 min)
-
-**"Real time" does not mean "fast."** This is the single most important idea of the day and the most common misconception. Real time means *the system provably meets its deadline every time, including the worst case*. A slow system with a guaranteed ceiling is real time; a blazing-fast system that occasionally stalls is not.
-
-`[WB]` Draw two response-time distributions. The first is centred low (fast average) but has a long tail stretching far to the right, once in a while it is very late. The second is centred higher (slower average) but stops abruptly at a hard ceiling, it is never later than X. For a deadline at X, the second system is correct and the first is broken, even though the first "feels" faster. **The tail, not the average, decides.**
-
-**Hard, firm, and soft real time.** Classify by what a missed deadline costs:
-- *Hard*: a miss is a system failure. Airbag, motor commutation, flight control. The deadline is a correctness requirement.
-- *Firm*: a late result is useless but not catastrophic, you discard it. A video frame that arrives after its display slot.
-- *Soft*: lateness degrades quality but the result still has value. A UI that stutters, a log that arrives late.
-Most products mix all three. `[Q]` Have the room bucket a few of their section-0 deadlines into hard/firm/soft.
-
-**Why general-purpose Linux is not real time by default.** Tie this straight back to Day 1 and the PRU. Linux is engineered for *throughput and fairness across many jobs*, not for the worst-case latency of any one job. Concretely, these introduce delays that are hard to bound on stock Linux:
-- **The scheduler** (CFS) balances fairness and throughput; it does not guarantee that your important thread runs within a fixed time.
-- **Interrupt handling**: a burst of interrupts (network, disk) can delay your thread.
-- **Kernel critical sections**: when the kernel disables preemption or holds a lock, your high-priority thread waits, and on stock kernels those sections are not tightly bounded.
-- **Memory**: the MMU, page faults, and TLB/cache misses add variable delay. A page fault can cost thousands of cycles.
+**Why general-purpose Linux is not real time by default.
+<pre>
+- Linux is engineered for *throughput and fairness across many jobs*, not for the worst-case 
+  latency of any one job. Concretely, these introduce delays that are hard to bound on stock Linux:
+- **The scheduler** (CFS) balances fairness and throughput, it does not guarantee that your important 
+  thread runs within a fixed time.
+- **Interrupt handling**: a burst of interrupts (network, disk) can delay your thread
+- **Kernel critical sections**: when the kernel disables preemption or holds a lock, your high-priority 
+  thread waits, and on stock kernels those sections are not tightly bounded.
+- **Memory**: the MMU, page faults, and TLB/cache misses add variable delay. A page fault can cost 
+  thousands of cycles.
 - **DMA and bus contention**: other masters moving data can stall yours.
+</pre>
 
-`[Q]` "Which of these exist on the PRU? On the Cortex-M4 in the Nucleo?" Walk it out: the PRU has no OS scheduler stealing time and no MMU; the Cortex-M has no MMU and runs your RTOS directly. That absence of unpredictable machinery is *exactly* why they give determinism. This is the reason the book splits work: Linux on the BeagleBone runs the connected application; the PRU or an RTOS on a microcontroller handles the hard-timing piece.
+"Which of these exist on the PRU? On the Cortex-M4 in the Nucleo?" 
+<pre>
+- the PRU has no OS scheduler stealing time and no MMU; the Cortex-M has no MMU and runs your RTOS directly
+- That absence of unpredictable machinery is *exactly* why they give determinism
+- Linux on the BeagleBone runs the connected application,  the PRU or an RTOS on a microcontroller 
+  handles the hard-timing piece.
+</pre>
 
-**What an RTOS actually gives you.** A small, analyzable scheduler where *you* assign priorities and the highest-priority ready task always runs; a bounded, known context-switch cost; and synchronization primitives whose timing you can reason about. You trade away the rich OS, no filesystem, no process model, no networking stack for free, in exchange for predictability. That trade is the whole point.
-
-**Where an RTOS sits.** `[WB]` A spectrum: bare metal (smallest, most predictable, hardest to scale) → RTOS (tasks, priorities, bounded latency, still small) → full Linux (huge capability, weak timing guarantees). Day 4 lives in the middle and at the extreme-determinism end (the PRU).
-
-**Check:** *"A system can be very fast on average and still not be real time, why?"* (Because a single worst-case cycle can miss the deadline; the guarantee is about the ceiling, not the mean.)
-
----
 
 ### 2. Tasks and the scheduler (60 min)
 
@@ -83,6 +94,7 @@ void my_task(void *arg) {
     }
 }
 ```
+
 It must never `return`, a returning task is a bug (you either loop forever or delete the task explicitly). Contrast this with the bare-metal **super-loop** (`while(1){ do_a(); do_b(); do_c(); }`). `[WB]` Put the super-loop next to three tasks. The super-loop is simple but every job's timing depends on every other job, add a slow `do_d()` and everything downstream jitters. Tasks decouple that: each has its own priority and its own stack.
 
 **Each task has its own stack.** That is what makes tasks independent, local variables, call frames, and the saved context all live on that task's stack. When you call `xTaskCreate(..., stackDepth, ...)` the number you pass is that stack's size (in *words*, not bytes, on most ports). Undersize it and the task overflows its stack into memory it does not own, one of the most common and most confusing RTOS bugs. Right-size it by measuring high-water mark (`uxTaskGetStackHighWaterMark`) rather than guessing.
