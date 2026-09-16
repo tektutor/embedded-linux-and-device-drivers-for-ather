@@ -150,132 +150,171 @@ Trace it: task calls `vTaskDelay`
     - you can account for switch cost in your timing budget. 
 </pre>
 
-**If you design tasks that each do a microsecond of work then yield, what dominates, useful work or switching?**
-<pre>  
-  
-  (Switching, you'd be paying overhead to accomplish almost nothing. Granularity matters.)
+**Blocking is the entire trick.** 
+<pre>
+- This is the idea that makes multitasking work
+- A task that calls `vTaskDelay(pdMS_TO_TICKS(500))` or waits on a queue goes **Blocked** 
+  and consumes *no CPU* for that whole period, the scheduler runs other Ready tasks instead
+- Compare with a **busy-wait**:
+- BUSY-WAIT — bad: burns the CPU, starves lower-priority tasks 
+  volatile uint32_t i; for (i = 0; i < 1000000; i++) { }
+- BLOCKING DELAY — good: yields the CPU for the duration 
+  vTaskDelay(pdMS_TO_TICKS(500));
+
+- The busy-wait keeps the task **Running**, so nothing of lower priority can run for that whole time
+- The blocking delay frees the CPU. 
+- Preview Lab 13's producer/consumer
+  - the producer is higher priority, but it sends one value and then *blocks* for 500 ms, 
+    and it is *only because it blocks* that the lower-priority consumer ever gets the CPU to print
+  - If the producer busy-waited instead, the consumer would never run
 </pre>
 
-**Blocking is the entire trick.** This is the idea that makes multitasking work. A task that calls `vTaskDelay(pdMS_TO_TICKS(500))` or waits on a queue goes **Blocked** and consumes *no CPU* for that whole period, the scheduler runs other Ready tasks instead. Compare with a **busy-wait**:
-```c
-/* BUSY-WAIT — bad: burns the CPU, starves lower-priority tasks */
-volatile uint32_t i; for (i = 0; i < 1000000; i++) { }
+**Starvation.** 
+<pre>
+- The flip side
+  - a high-priority task that *never blocks* starves everything below it, 
+  - the lower tasks are always Ready but never highest, so they never run, it comes straight back in priority inversion 
+  - A well-behaved high-priority task does a little work and then blocks (on a delay, an event, a queue), 
+    leaving room for other tasks.
+</pre>
 
-/* BLOCKING DELAY — good: yields the CPU for the duration */
-vTaskDelay(pdMS_TO_TICKS(500));
-```
-The busy-wait keeps the task **Running**, so nothing of lower priority can run for that whole time. The blocking delay frees the CPU. `[DEMO]/[WB]` Preview Lab 13's producer/consumer: the producer is higher priority, but it sends one value and then *blocks* for 500 ms, and it is *only because it blocks* that the lower-priority consumer ever gets the CPU to print. If the producer busy-waited instead, the consumer would never run.
+### Synchronization primitives — semaphores, mutexes, queues
+<pre>
+- The problem first
+  - Two tasks touching the same data without coordination corrupt it. 
+  - a shared count++ on a 32-bit value that takes read-modify-write
+  - Task A reads count, gets preempted by Task B which also reads the old value
+    both increment and write back, one increment is lost
+  - On wider data or structs it's worse, a reader can see a half-updated value
+  - The primitives below exist to make these interactions safe
+</pre>
 
-**Starvation.** The flip side: a high-priority task that *never blocks* starves everything below it, the lower tasks are always Ready but never highest, so they never run. Name this now; it comes straight back in priority inversion. A well-behaved high-priority task does a little work and then blocks (on a delay, an event, a queue), leaving room below.
+**Queue — move data between tasks.** 
+<pre>
+- A queue is a fixed-length FIFO that stores **copies** of items. 
+- `xQueueSend` - add the item into the 'Queue'
+- `xQueueReceive` - Return the item from the 'Queue' and removes from the 'Queue'
+- It also *synchronizes*
+  - a receiver on an empty queue **blocks** until an item arrives
+  - a sender to a full queue blocks until space frees. 
+- Two properties matter
+  - It copies, it does not share a pointer, so the sender can reuse or change its variable 
+    immediately after sending. 
+  - Blocking receive is the clean producer/consumer pattern: no polling, no busy-wait.
+- Use a queue as your default for "one task produces work, another consumes it"
+</pre>
 
-**Check:** *"Why does a lower-priority task ever get to run at all?"* (Only because the higher-priority tasks block, on delays or waits, yielding the CPU.)
+**Binary semaphore — signal an event.** 
+<pre>
+- Producer task notifies to alert the consumer
+- Consumer task retrieves the data once Producer task notifies
+- The classic use is **ISR-to-task handoff**
+  - the interrupt does the minimum in the handler and `xSemaphoreGiveFromISR` to wake a task 
+    that does the real work at task level
+- Example
+  - Imagine, there is only 1 rest-room in Paying Guest room where 4 room-mates are there
+    - only one person can the rest-room at a time, the door is locked while the rest room in use, 
+      the other housemates wait
+</pre>
 
----
+**Counting semaphore — count available units.** 
+<pre>
+- A semaphore initialized to N, where each 'take' consumes one and each 'give' returns one 
+- Example
+  - the number of runways in the Airport are limited, assume 2 runnways are available in a small Airport
+  - there are many flights may wanted to use the runway
+    - some flight may use the runway for landing
+    - some flight may use the runway for take-off
+    - as the number of the runways are limited, but there are many flights this must be synchronized
+</pre>
 
-### 3. Synchronization primitives — semaphores, mutexes, queues (55 min)
+**Mutex — protect a shared resource.** 
+<pre>
+- A mutex enforces mutual exclusion around a critical section: take it before touching the resource, give it after. 
+- Two things make a mutex different from a binary semaphore, 
+  - **Ownership**: the task that takes a mutex is its owner and is the one that must give it back 
+  - binary semaphore has no owner, anyone can give it
+- **Priority inheritance**: because the mutex knows its owner, the RTOS can *temporarily raise the owner's priority* 
+  when a higher-priority task is waiting for it. 
+- **The traps.** Name them explicitly, they are where real systems break:
+  - Forgetting to give the lock back → everything else waiting on it hangs
+  - **Blocking while holding a lock**
+    - calling a long delay or another blocking API inside a critical section 
+    - you extend the time others are shut out, and can deadlock
+- **Deadlock**: two tasks each hold one lock and wait for the other's. 
+  - A holds lock1 and wants lock2
+  - B holds lock2 and wants lock1, neither ever proceeds
+  - The defense is a discipline: 
+    - *always take multiple locks in the same global order everywhere.*
 
-**The problem first: races.** Two tasks touching the same data without coordination corrupt it. `[WB]` Show a shared `count++` on a 32-bit value that takes read-modify-write: Task A reads `count`, gets preempted by Task B which also reads the old value, both increment and write back, one increment is lost. On wider data or structs it's worse, a reader can see a half-updated value. The primitives below exist to make these interactions safe.
+**Rule of thumb to leave on the board:** 
+- use 'queue 'to move data
+- use semaphore to signal an event
+- use mutex to protect a resource
+</pre>
 
-**Queue — move data between tasks.** A queue is a fixed-length FIFO that stores **copies** of items. `xQueueSend` copies your item in; `xQueueReceive` copies one out. It also *synchronizes*: a receiver on an empty queue **blocks** until an item arrives; a sender to a full queue blocks until space frees. Two properties matter:
-- It copies, it does not share a pointer, so the sender can reuse or change its variable immediately after sending. (You *can* queue pointers deliberately, but then you're back to managing shared memory.)
-- Blocking receive is the clean producer/consumer pattern: no polling, no busy-wait.
-Use a queue as your default for "one task produces work, another consumes it."
+### Priority inversion and inheritance
+<pre>
+- Remember, In FreeRTOS
+  - higher number = highest priority
+  - lower numbered priority means it has lowest priority
+  - higher numbered priority means it has highest priority
 
-**Binary semaphore — signal an event.** Think of it as a one-token flag: a task **takes** it (and blocks if it's not available); another task, *or an interrupt*, **gives** it to signal "the thing happened." The classic use is **ISR-to-task handoff**: the interrupt does the minimum in the handler and `xSemaphoreGiveFromISR` to wake a task that does the real work at task level (deferred processing / "bottom half," the same top-half/bottom-half idea from Day 3, in RTOS form). `[Q]` "Why not do all the work in the ISR?" (Long ISRs block other interrupts and wreck latency, keep them short, defer.)
+- QNX
+  - higher number = highest priority
+  - lower numbered priority means it has lowest priority
+  - higher numbered priority means it has highest priority
+  
+- In VxWorks RTOS
+  - lower numbered Priority indicates highest priority (0)
+  - higher numbered Priority indicates lowest priority (255)
 
-**Counting semaphore — count available units.** A semaphore initialized to N, where each take consumes one and each give returns one. Models a pool: N free buffers, N slots in a resource. Take blocks when the count hits zero.
+- In Zephyr RTOS
+  - lower numbered Priority indicates highest priority (0)
+  - higher numbered Priority indicates lowest priority (255)
+  
+- Three tasks: **Low**, **Medium**, **High** (priorities 1, 2, 3)
+- Low and High share a resource guarded by a mutex
+- Medium needs does not need the mutex, it's just CPU-hungry work at middle priority
 
-**Mutex — protect a shared resource.** A mutex enforces mutual exclusion around a critical section: take it before touching the resource, give it after. Two things make a mutex different from a binary semaphore, and Lab 14 turns on exactly these:
-- **Ownership**: the task that takes a mutex is its owner and is the one that must give it back. (A binary semaphore has no owner, anyone can give it.)
-- **Priority inheritance**: because the mutex knows its owner, the RTOS can *temporarily raise the owner's priority* when a higher-priority task is waiting for it, the fix for the inversion problem in the next section. Binary semaphores cannot do this because they have no owner to boost.
-`[WB]` Put mutex vs binary semaphore in a two-row table: *ownership* (yes/no), *priority inheritance* (yes/no), *typical use* (guard a resource / signal an event).
+- **Low** runs first (nothing else Ready) and **takes the mutex**, entering its critical section
+- **High** wakes and tries to **take the mutex**, it's held by Low, so High **blocks**. Fine so far, 
+  High is *supposed* to wait briefly for Low to finish
+- **Medium** wakes. Medium (priority 2) is higher than Low (priority 1) and needs no mutex, so it **preempts Low**
+  Low is frozen mid-critical-section and cannot release the mutex
+- Now the trap is sprung: **High (priority 3) is effectively waiting on Medium (priority 2)** to finish, 
+  because Medium is starving Low, who holds the lock High needs
+  The highest-priority task in the system is blocked by a *lower*-priority one, for as long as Medium chooses to run. 
+  That is **priority inversion**: priorities have been turned upside down by the lock
 
-**The traps.** Name them explicitly, they are where real systems break:
-- Forgetting to give the lock back → everything else waiting on it hangs.
-- **Blocking while holding a lock** (e.g., calling a long delay or another blocking API inside a critical section) → you extend the time others are shut out, and can deadlock.
-- **Deadlock**: two tasks each hold one lock and wait for the other's. `[WB]` A holds lock1 and wants lock2; B holds lock2 and wants lock1, neither ever proceeds. The defense is a discipline: *always take multiple locks in the same global order everywhere.*
-
-**Rule of thumb to leave on the board:** *queue to move data, semaphore to signal an event, mutex to protect a resource.*
-
-**Check:** *"Which primitive for an ISR telling a task 'a byte arrived'?"* (binary semaphore, give-from-ISR.) *"Which to guard a shared I2C bus two tasks both use?"* (mutex.)
-
----
-
-### 4. Priority inversion and inheritance (45 min) — *sets up Lab 14 directly*
-
-This is the set-piece of the morning: a failure that looks impossible ("my highest-priority task missed its deadline and there's no bug in it") and has a precise cause and a precise fix.
-
-**The cast.** Three tasks: **Low**, **Medium**, **High** (priorities 1, 2, 3). Low and High share a resource guarded by a mutex. Medium needs the mutex not at all, it's just CPU-hungry work at middle priority.
-
-**The failure, as a timeline.** `[WB]` Draw a horizontal time axis and step through it:
-1. **Low** runs first (nothing else Ready) and **takes the mutex**, entering its critical section.
-2. **High** wakes and tries to **take the mutex** → it's held by Low, so High **blocks**. Fine so far, High is *supposed* to wait briefly for Low to finish.
-3. **Medium** wakes. Medium (priority 2) is higher than Low (priority 1) and needs no mutex, so it **preempts Low**. Low is frozen mid-critical-section and cannot release the mutex.
-4. Now the trap is sprung: **High (priority 3) is effectively waiting on Medium (priority 2)** to finish, because Medium is starving Low, who holds the lock High needs. The highest-priority task in the system is blocked by a *lower*-priority one, for as long as Medium chooses to run. That is **priority inversion**: priorities have been turned upside down by the lock.
-
-**Why it's dangerous, and a real example.** The delay is unbounded, if Medium keeps finding work, High may *never* run, and there is no obvious bug in any single task. The famous case is **Mars Pathfinder (1997)**: on the surface of Mars, the lander began resetting itself repeatedly. A high-priority bus-management task shared a mutex with a low-priority task; a medium-priority comms task preempted the low one at the wrong moment; the high task missed its deadline; a watchdog saw the miss and reset the system. It was diagnosed and *fixed remotely* by enabling priority inheritance. `[Q]` Ask the room what they'd even look for, the point is that the tasks are individually correct; the fault is emergent, from the interaction through the lock.
-
-**The fix — priority inheritance.** While Low holds a mutex that a higher-priority task (High) is waiting for, the RTOS **temporarily boosts Low's priority up to High's** for the duration it holds the lock. `[WB]` Redraw the same timeline with inheritance on:
-1. Low takes the mutex.
-2. High tries, blocks, *and* Low is immediately boosted to priority 3.
-3. Medium wakes, but Medium (2) can no longer preempt Low (now 3), so Low keeps running.
-4. Low finishes its critical section quickly and **gives the mutex**; its priority drops back to 1; High immediately takes the mutex and runs. Deadline met.
+- **Why it's dangerous, and a real example.** 
+- The delay is unbounded, if Medium keeps finding work, High may *never* run, and there is no obvious bug in any single task.
+- The famous case is **Mars Pathfinder (1997)**: on the surface of Mars, the lander began resetting itself repeatedly. 
+- A high-priority bus-management task shared a mutex with a low-priority task; a medium-priority comms task preempted the 
+  low one at the wrong moment; the high task missed its deadline; a watchdog saw the miss and reset the system. 
+- It was diagnosed and *fixed remotely* by enabling priority inheritance. 
+- **The fix — priority inheritance.
+  - High tries, blocks, *and* Low is immediately boosted to priority 3
+  - Medium wakes, but Medium (2) can no longer preempt Low (priority now is 3), so Low keeps running
+  - Low finishes its critical section quickly and **gives the mutex**; its priority drops back to 1; 
+  - High immediately takes the mutex and runs. Deadline resolved.
 The boost lasts only while the lock is held, exactly the window where it's needed.
 
-**Why this is a mutex feature specifically.** Inheritance requires knowing *whose* priority to boost, that is, the lock's owner. A mutex tracks ownership; a binary semaphore does not. This is the concrete reason "use a mutex, not a binary semaphore, to protect a resource," and it's the one line you change in Lab 14.
+- **Why this is a mutex feature specifically.** 
+  - Inheritance requires knowing *whose* priority to boost, that is, the lock's owner. 
+  - A mutex tracks ownership; a binary semaphore does not. 
+  - This is the concrete reason "use a mutex, not a binary semaphore, to protect a resource,"
+</pre>
 
-**Hand-off to the lab:** *"This afternoon in Lab 14 you'll reproduce this exact inversion on the Nucleo with a binary semaphore, watch the high task miss, then switch one line to a mutex (`xSemaphoreCreateMutex`) and watch priority inheritance bring the deadline back."*
-
-**Check:** *"In the broken version, who is actually blocking High, Low or Medium?"* (Medium, by starving Low, who holds the lock High needs. That indirection is the whole lesson.)
-
----
-
-### 5. Measuring real time — WCET, jitter, latency (40 min) — *sets up the PRU + PREEMPT_RT labs*
-
-**Measure, don't assume.** Everything claimed this morning, "bounded," "deterministic," "meets the deadline", is worthless as an assertion. It has to be a *number you measured*. This block gives the room the vocabulary and the methods, and sets up the afternoon's PRU and PREEMPT_RT labs, which are entirely about getting those numbers.
-
-**The three quantities.** `[WB]` Sketch a timeline: an event happens, then some time later the response starts, then it runs for a while.
-- **Latency** — the gap from *event* to *start of response*. "How long before my code even begins reacting?"
-- **Jitter** — the *variation* in that latency from one cycle to the next. A control loop can often tolerate a constant delay but hates a delay that wanders, jitter is frequently the real enemy in motor control and signal sampling.
-- **WCET (worst-case execution time)** — the longest a piece of code can take to *run*, across all inputs, all code paths, and all cache/pipeline states. You rarely get it exactly; you *bound* it (measure many runs under worst conditions, or analyze). Your deadline math uses the worst case, not the average.
-
-**Why the worst case, not the average.** Restate the section-1 point with numbers. `[Q]` "Average latency is 20 µs, but one cycle in 10,000 is 1 ms, is this real time for a 100 µs deadline?" (No, that one late cycle is a missed deadline, and over hours of operation it *will* happen. The tail decides.)
-
-**How to measure on real hardware.**
-- **GPIO + scope/logic analyzer**: toggle a pin high at the start of your response and low at the end (or pulse it at the event and again at response-start). On a scope you can *see* the latency directly and, by watching many cycles, *see* the jitter as the edge "smears." This is the most honest measurement, it's the physical signal, and it's exactly why **Lab 15 puts a scope on the PRU's output pin**: a rock-steady square wave means low jitter; a smeared edge means the timing wanders.
-- **`cyclictest`** (Linux, rt-tests): a standard tool that repeatedly sleeps for a set interval and measures how late it actually woke. It reports **min / avg / max** latency. The number that matters is **max under load**, run it *while the system is busy* (`stress-ng`), because the worst case shows up under load, not on an idle box. That's **Lab 16**.
-
-**The comparison you'll draw this afternoon.** `[WB]` Same job, three platforms, three timing profiles:
-- **PRU** — no scheduler, no OS, no MMU: the tightest, most deterministic timing available on this board. Best jitter.
-- **PREEMPT_RT Linux** — the real-time patch reworks the kernel so most of it is preemptible and bounded: dramatically better worst-case latency than stock Linux, but still larger and less certain than the PRU (it's still a full OS).
-- **Stock Linux** — fine on average, but with an unbounded tail, not suitable for hard deadlines.
-The afternoon labs produce actual numbers for the second and third and a scope trace for the first, so the room *sees* the trade rather than taking it on faith.
-
-**Check:** *"Your logic-analyzer trace shows the response edge jumping around by ±40 µs cycle to cycle, latency looks fine but which quantity is the problem, and for what kind of system does it matter most?"* (Jitter; it wrecks control loops and precise sampling even when average latency is acceptable.)
-
----
-
-### Wrap the morning (10 min)
-- Recap the chain in one breath: **you need bounded latency → the mechanism is a priority-based preemptive scheduler plus blocking → the hazard is priority inversion, fixed by inheritance → and none of it counts until you measure WCET, jitter, and latency.**
-- Preview the four afternoon labs against exactly these ideas: **13** shows preemptive scheduling and blocking; **14** breaks and fixes priority inversion; **15** shows PRU determinism on a scope; **16** puts real latency numbers on PREEMPT_RT under load.
-- `[Q]` Return to the deadlines the room listed in section 0. For each, decide together: RTOS, PRU, or is ordinary Linux fine? Make them justify it with the morning's vocabulary (hard vs soft, bounded vs tail, jitter tolerance).
-
-
-## Hardware for Day 4
+## Hardware required for Day 4
 | Item | Used by |
 |------|---------|
 | STM32 Nucleo board + USB (ST-Link) cable | Lab 13, 14 |
-| BeagleBone Black + FTDI serial cable | Lab 15, 16 |
-| LED + resistor to watch the PRU loop; optional logic analyzer/scope | Lab 15 |
 
 ## Install (HOST)
-- FreeRTOS/Zephyr toolchain for the Nucleo (`arm-none-eabi-gcc` + your SDK).
+- FreeRTOS toolchain for the Nucleo (`arm-none-eabi-gcc` + your SDK).
 - PRU C compiler (TI PRU Code Generation Tools) for Lab 15.
 - On the **BOARD** for Lab 16: `sudo apt install -y rt-tests stress-ng`.
-
-> Full source under each `LabN-Name/src/`. The FreeRTOS/PRU code is **reference starter code** — confirm the API/build against your SDK.
-
----
 
 ## Lab 13 — Tasks and scheduling
 **Objective:** two tasks at different priorities share a queue; the higher-priority task runs first when ready.
@@ -337,8 +376,6 @@ echo start          | sudo tee /sys/class/remoteproc/remoteproc1/state
 ```
 **Expected output:** a scope on the PRU pin shows a rock-steady square wave; the same toggle from a Linux thread jitters under load.
 
----
-
 ## Lab 16 — PREEMPT_RT latency
 **Objective:** measure scheduling latency under load and compare against the PRU.
 **Run — on the BOARD (running a PREEMPT_RT kernel)**
@@ -348,56 +385,6 @@ sudo cyclictest -m -p90 -i200 -h400 &      # the MAX latency is what counts
 stress-ng --cpu 4 --io 2 --timeout 60s     # load it while measuring
 ```
 **Expected output:** `cyclictest` reports a bounded worst-case latency far tighter than a stock kernel — but still larger and less certain than the PRU.
-=======
-# Day 4
-
-## Info - General Purpose Operating System
-
-## Info - Real Time Operating System (RTOS)
-
-## Info - General Purpose Operating System Vs RTOS
-
-## Info - MicroProcessor
-<pre>
-- Powerful Processor
-- It can technically connect to any time of devices
-- Input/Ouput devices are external to Processor
-- It interfaces with powerful external graphics
-- It interfaces with external Network 
-  - supports Bluetooth, WiFi, LAN, etc.,
-</pre>
-
-## Info - Micro-controller
-
-## Info - MicroProcessor vs Micro-controller
-
-## Info - Synchronization Mechanism
-
-## Info - Different types of Synchronization Mechanism
-<pre>
-- Mutex ( Mutually Exclusive )
-- Semaphore
-  - Binary Semaphore
-  - Counting Semaphore
-</pre>
-
-## Info - Monolithic Kernel
-
-## Info - Micro-kernel
-
-## Info - Monolithic vs Micro-Kernel
-
-## Info - Is FreeRTOS a Monolithic or Micro-kernel ?
-<pre>
-- FreeRTOS is neither
-- FreeRTOS doesn't separate the userspace from Kernel Space
-- Kernel and application runs in the unified namespace
-- There is no memory protection
-- Benefits
-  - Easy to develop application as there is no user/kernel space seggregations
-- Drawbacks
-  - A badly written/designed application can corrupt the kernel and bring-down the whole OS 
-</pre>
 
 ## Lab1 - Mutex
 ```
