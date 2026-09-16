@@ -29,11 +29,6 @@
 
 **The microcontroller for the FreeRTOS labs:** ![F446](figures/fig_f446.png)
 
----
-
-## Morning — Full Session Content (~4 hours)
-
-
 **when is "usually fast" not good enough, and what do you use instead?**
 <pre>
 - Contrast two systems that both react to an event in software. 
@@ -74,7 +69,7 @@
 - **DMA and bus contention**: other masters moving data can stall yours.
 </pre>
 
-"Which of these exist on the PRU? On the Cortex-M4 in the Nucleo?" 
+**Which of these exist on the PRU? On the Cortex-M4 in the Nucleo? 
 <pre>
 - the PRU has no OS scheduler stealing time and no MMU; the Cortex-M has no MMU and runs your RTOS directly
 - That absence of unpredictable machinery is *exactly* why they give determinism
