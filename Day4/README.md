@@ -47,15 +47,15 @@
 - Real time means *the system provably meets its deadline every time, including the worst case
 - A slow system with a guaranteed ceiling is real time, a blazing-fast system that occasionally 
   stalls is not.
-- **Hard**: a miss is a system failure. Airbag, motor commutation, flight control. 
-    - The deadline is a correctness requirement.
-- *Firm*: a late result is useless but not catastrophic, you discard it. 
+- Hard: a miss is a system failure. Airbag, motor commutation, flight control. 
+  - The deadline is a correctness requirement.
+- Firm: a late result is useless but not catastrophic, you discard it. 
   - A video frame that arrives after its display slot
-- *Soft*: lateness degrades quality but the result still has value. 
-   - A UI that stutters, a log that arrives late
+- Soft: lateness degrades quality but the result still has value. 
+  - A UI that stutters, a log that arrives late
 </pre>
 
-**Why general-purpose Linux is not real time by default.
+**Why general-purpose Linux is not real time by default.**
 <pre>
 - Linux is engineered for *throughput and fairness across many jobs*, not for the worst-case 
   latency of any one job. Concretely, these introduce delays that are hard to bound on stock Linux:
@@ -69,7 +69,7 @@
 - **DMA and bus contention**: other masters moving data can stall yours.
 </pre>
 
-**Which of these exist on the PRU? On the Cortex-M4 in the Nucleo? 
+**Which of these exist on the PRU? On the Cortex-M4 in the Nucleo?**
 <pre>
 - the PRU has no OS scheduler stealing time and no MMU; the Cortex-M has no MMU and runs your RTOS directly
 - That absence of unpredictable machinery is *exactly* why they give determinism
@@ -78,10 +78,11 @@
 </pre>
 
 
-### 2. Tasks and the scheduler (60 min)
+### Tasks and the scheduler
 
-**A task is an independent function with its own stack that runs forever.** In FreeRTOS a task is a C function shaped like:
-```c
+**A task is an independent function with its own stack that runs forever.** 
+In FreeRTOS a task is a C function that looks like
+```
 void my_task(void *arg) {
     /* one-time setup */
     for (;;) {
@@ -89,25 +90,71 @@ void my_task(void *arg) {
     }
 }
 ```
+<pre>
+- It must never `return`
+- a returning task is a bug (you either loop forever or delete the task explicitly). 
+- Tasks decouple that 
+  - each has its own priority and its own stack
+- Each task has its own stack.
+  - That is what makes tasks independent, local variables, call frames, and the saved context 
+    all live on that task's stack
+  - When you call `xTaskCreate(..., stackDepth, ...)` the number you pass is that stack's size 
+   (in *words*, not bytes, on most ports). 
+  - Undersize it and the task overflows its stack into memory it does not own, one of the most 
+   common and most confusing RTOS bugs. Right-size it by measuring high-water mark (`uxTaskGetStackHighWaterMark`) 
+   rather than guessing
+</pre>
 
-It must never `return`, a returning task is a bug (you either loop forever or delete the task explicitly). Contrast this with the bare-metal **super-loop** (`while(1){ do_a(); do_b(); do_c(); }`). `[WB]` Put the super-loop next to three tasks. The super-loop is simple but every job's timing depends on every other job, add a slow `do_d()` and everything downstream jitters. Tasks decouple that: each has its own priority and its own stack.
-
-**Each task has its own stack.** That is what makes tasks independent, local variables, call frames, and the saved context all live on that task's stack. When you call `xTaskCreate(..., stackDepth, ...)` the number you pass is that stack's size (in *words*, not bytes, on most ports). Undersize it and the task overflows its stack into memory it does not own, one of the most common and most confusing RTOS bugs. Right-size it by measuring high-water mark (`uxTaskGetStackHighWaterMark`) rather than guessing.
-
-**Task states.** `[WB]` Draw the state machine and walk one task around it:
-- **Running** — currently on the CPU (only one task per core at a time).
-- **Ready** — able to run, waiting only because something higher-priority is running.
+**Task states.** Draw the state machine and walk one task around it:
+- **Running** — currently CPU is running the task (only one task per core at a time)
+- **Ready** — able to run, waiting only because some higher-priority task is running
 - **Blocked** — waiting for an event or a timeout (a delay, a queue item, a semaphore). Uses *no CPU*.
 - **Suspended** — explicitly parked with `vTaskSuspend`, ignored by the scheduler until resumed.
-Trace it: task calls `vTaskDelay` → **Blocked**; the tick expires → **Ready**; the scheduler picks it → **Running**; it waits on an empty queue → **Blocked** again.
+Trace it: task calls `vTaskDelay`
 
-**Priority-based preemptive scheduling.** The rule is one sentence: *the highest-priority task that is Ready is the one that runs.* In FreeRTOS a **higher number means higher priority** (0 is lowest, `configMAX_PRIORITIES-1` is highest). "Preemptive" means the switch happens *immediately*: the moment a higher-priority task becomes Ready (say, its delay expires or the ISR it was waiting on fires), it takes the CPU from whatever lower-priority task was running, mid-function, at the next instruction boundary. The lower task doesn't get to finish first.
+**Priority-based preemptive scheduling.** 
+- The rule is one sentence: *the highest-priority task that is Ready is the one that runs.
+- In FreeRTOS, a **higher number means higher priority** (0 is lowest, `configMAX_PRIORITIES-1` is highest)
+- "Preemptive" means the switch happens *immediately*
+  - the moment a higher-priority task becomes Ready (say, its delay expires or the ISR it was waiting on fires),
+  - it takes the CPU from whatever lower-priority task was running, mid-function, at the next instruction boundary
+  - The lower priority task doesn't get to finish first
 
-`[Q]` "If two Ready tasks have the *same* priority, what happens?" → FreeRTOS time-slices them round-robin on each tick (if `configUSE_TIME_SLICING` is on). Equal priority = fair sharing; unequal = strict preemption.
+**If two Ready tasks have the *same* priority, what happens?"**
+<pre>
+- FreeRTOS time-slices them round-robin on each tick (if `configUSE_TIME_SLICING` is on)
+- Equal priority = fair sharing
+- unequal = strict preemption
+</pre>
 
-**The tick.** A periodic timer interrupt, the **tick**, drives time in the RTOS. Its rate is `configTICK_RATE_HZ` in `FreeRTOSConfig.h` (commonly 1000 Hz = one tick per millisecond). On every tick the kernel checks whether any delayed task's timeout has expired (move it to Ready) and, with time-slicing, whether to rotate equal-priority tasks. This is why delays are quantized to the tick: a `vTaskDelay` of "1 ms" at a 1000 Hz tick is one tick; ask for finer than a tick and you can't get it from `vTaskDelay`. `pdMS_TO_TICKS(ms)` converts milliseconds to ticks against this exact rate, which is why the rate must be set correctly for delays to mean what you think.
+**The tick.** 
+<pre>
+- A periodic timer interrupt, the **tick**, drives time in the RTOS
+- Its rate is `configTICK_RATE_HZ` in `FreeRTOSConfig.h` (commonly 1000 Hz = one tick per millisecond)
+- On every tick the kernel checks whether any delayed task's timeout has expired (move it to Ready) and, 
+  with time-slicing, whether to rotate equal-priority tasks. 
+- This is why delays are quantized to the tick: a `vTaskDelay` of "1 ms" at a 1000 Hz tick is one tick, 
+  ask for finer than a tick and you can't get it from `vTaskDelay`. `pdMS_TO_TICKS(ms)` converts milliseconds 
+  to ticks against this exact rate, which is why the rate must be set correctly for delays to mean what you think
+</pre>
 
-**Context switch — what it costs.** `[WB]` When the scheduler switches from task A to task B it must **save A's context** (the CPU registers, the stack pointer, the program counter) onto A's stack and **restore B's context** from B's stack. On a Cortex-M this is a few dozen instructions, fast, but *not free*, and, crucially for real time, *bounded and known*. That boundedness is the point: you can account for switch cost in your timing budget. `[Q]` "If you design tasks that each do a microsecond of work then yield, what dominates, useful work or switching?" (Switching, you'd be paying overhead to accomplish almost nothing. Granularity matters.)
+**Context switch — what it costs.** 
+<pre>
+- When the scheduler switches from task A to task B,  it must **save A's context** 
+  - the CPU registers
+  - the stack pointer
+  - the program counter onto A's stack and restore B's context from B's stack 
+  - On a Cortex-M this is a few dozen instructions, fast, but not free, and, crucially for real time
+    bounded and known. 
+  - That boundedness is the point
+    - you can account for switch cost in your timing budget. 
+</pre>
+
+**If you design tasks that each do a microsecond of work then yield, what dominates, useful work or switching?**
+<pre>  
+  
+  (Switching, you'd be paying overhead to accomplish almost nothing. Granularity matters.)
+</pre>
 
 **Blocking is the entire trick.** This is the idea that makes multitasking work. A task that calls `vTaskDelay(pdMS_TO_TICKS(500))` or waits on a queue goes **Blocked** and consumes *no CPU* for that whole period, the scheduler runs other Ready tasks instead. Compare with a **busy-wait**:
 ```c
