@@ -7,6 +7,14 @@
 ## Info - General Purpose Operating System Vs RTOS
 
 ## Info - MicroProcessor
+<pre>
+- Powerful Processor
+- It can technically connect to any time of devices
+- Input/Ouput devices are external to Processor
+- It interfaces with powerful external graphics
+- It interfaces with external Network 
+  - supports Bluetooth, WiFi, LAN, etc.,
+</pre>
 
 ## Info - Micro-controller
 
