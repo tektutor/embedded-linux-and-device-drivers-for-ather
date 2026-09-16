@@ -402,3 +402,17 @@ minicom -D /dev/ttyACM0 -b 115200
 # Manually press the reset button on the board
 # At this point you see the board output on the Terminal tab 1
 ```
+
+
+## Info - Step by Step procedure that one can follow to build their first application for a particular board
+<pre>
+- In our case, we have STM32 Nucleo F446RE
+Step 1: Identify Your Exact MCU
+- Nucleo-F446RE board carries the STM32F446RET6 microcontroller
+- That full part number tells you everything
+  R = 64-pin LQFP package
+  E = 512 KB Flash
+  T = LQFP package type
+  6 = industrial temperature range (-40 to 85°C)
+- You need this to pick the right startup file, linker script, and peripheral register definitions
+</pre>
