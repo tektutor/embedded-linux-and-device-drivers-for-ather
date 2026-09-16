@@ -344,3 +344,20 @@ stress-ng --cpu 4 --io 2 --timeout 60s     # load it while measuring
 - Drawbacks
   - A badly written/designed application can corrupt the kernel and bring-down the whole OS 
 </pre>
+
+## Lab1 - Mutex
+```
+cd ~
+git clone https://github.com/tektutor/embedded-linux-and-device-drivers-for-ather.git
+cd embedded-linux-and-device-drivers-for-ather
+git pull
+cd Day4/FreeRTOS-Labs-STM32F446RE/Labs/Lab01-Mutex
+make
+make flash
+
+# ON Terminal tab 1
+minicom -D /dev/ttyACM0 -b 115200
+
+# Manually press the reset button on the board
+# At this point you see the board output on the Terminal tab 1
+```
