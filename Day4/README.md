@@ -43,11 +43,11 @@
 
 **"Real time" does not mean "fast."** 
 <pre>
--  This is the single most important idea of the day and the most common misconception
+- This is the single most important idea of the day and the most common misconception
 - Real time means *the system provably meets its deadline every time, including the worst case
 - A slow system with a guaranteed ceiling is real time, a blazing-fast system that occasionally 
   stalls is not.
-- *Hard*: a miss is a system failure. Airbag, motor commutation, flight control. 
+- **Hard**: a miss is a system failure. Airbag, motor commutation, flight control. 
     - The deadline is a correctness requirement.
 - *Firm*: a late result is useless but not catastrophic, you discard it. 
   - A video frame that arrives after its display slot
