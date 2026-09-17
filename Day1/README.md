@@ -189,21 +189,20 @@ Under the ~/zephyrproject/zephyr, the samples/ directory has dozens of examples 
 
 ## Lab 1 — Board bring-up
 Objective: reach the serial console, log in, and read the board's identity from /proc and /sys.
-
-J1 Serial Debug Header on BeagleBone Black
-J1 is the 6-pin header near the P9 expansion header. Pin 1 is marked with a small dot or triangle on the board, closest to the USB connector.
 <pre>
-J1 Pinout (looking at the board, pin 1 marked):
+- J1 Serial Debug Header on BeagleBone Black
+- J1 is the 6-pin header near the P9 expansion header. 
+- J1 Pin 1 is marked with a small dot or triangle on the board, closest to the USB connector.
+- J1 Pinout (looking at the board, pin 1 marked):
 
-Pin 1: GND
-Pin 2: NC
-Pin 3: NC
-Pin 4: RX (input to BBB)
-Pin 5: TX (output from BBB)
-Pin 6: NC
+  Pin 1: GND
+  Pin 2: NC
+  Pin 3: NC
+  Pin 4: RX (input to BBB)
+  Pin 5: TX (output from BBB)
+  Pin 6: NC
 </pre>
 
-```
 Wiring to FTDI
 You need only 3 jumper wires:
 <pre>
@@ -259,4 +258,3 @@ gpioset --by-name P9_12=0
 # LED off
 # register-level alternative (bare hardware): devmem2 on the GPIO data register
 ```
-
