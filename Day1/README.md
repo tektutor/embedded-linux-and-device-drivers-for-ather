@@ -62,7 +62,12 @@
   - Disadvantages: 
     - Slower CPU than modern Pi boards, no built-in Wi-Fi/Bluetooth, smaller community 
       and fewer ready-made tutorials, 512 MB RAM limits what you can run comfortably
+- How the ARM Core and PRU Communicate
+  - They share a portion of RAM (12 KB shared + access to main DDR3). 
+    The typical pattern is:
+    - The ARM core (Linux) loads firmware onto the PRU using the remoteproc framework
+    - The PRU runs its task, reading/writing shared memory or raising interrupts
+    - The ARM core reads results from shared memory, or gets notified via interrupt
+    - Linux provides the /dev/rpmsg_pruX character device for message passing between the ARM core and PRUs
+    - You can also map shared memory directly from a Linux userspace application
 </pre>
-
-
-
