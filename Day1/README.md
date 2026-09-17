@@ -268,3 +268,12 @@ udevadm info -a -n /dev/ttyACM1 | grep -E "idVendor|idProduct|manufacturer|produ
 ```
 <img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/a53f90ce-b5e8-4280-be31-a06756cd3874" />
 
+Now you can connect to Nucleo board
+```
+minicom -D /dev/ttyACM0 -b 115200
+```
+
+Now you can connect to BBB board
+```
+minicom -D /dev/ttyACM1 -b 115200
+```
