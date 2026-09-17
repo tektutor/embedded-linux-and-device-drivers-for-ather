@@ -1,5 +1,60 @@
 # Day 1 
 
+## Lab - Flashing Zephyr on STM32 F446RE Nucleo
+<pre>
+Prerequisites
+- Install the Zephyr SDK and west tool first:
+</pre>
+```
+pip install west
+west init ~/zephyrproject
+cd ~/zephyrproject
+west update
+west zephyr-export
+pip install -r ~/zephyrproject/zephyr/scripts/requirements.txt
+```
+
+Download and install the Zephyr SDK for your platform. It bundles the ARM toolchain and host tools you need.
+```
+cd ~/zephyrproject
+source zephyr/zephyr-env.sh
+```
+
+Build a Sample App
+- The Nucleo F446RE board identifier in Zephyr is nucleo_f446re
+```
+cd ~/zephyrproject/zephyr
+west build -p always -b nucleo_f446re samples/basic/blinky
+```
+
+Flash the Board
+Connect the Nucleo board via its onboard ST-Link USB port, then run
+```
+west flash
+```
+
+Troubleshooting wesh flash failed issue
+Check USB permissions (Linux). Add a udev rule so your user can access the ST-Link without sudo
+```
+sudo cp ~/zephyrproject/zephyr/scripts/openocd.udev /etc/udev/rules.d/60-openocd.rules
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+```
+Monitor Serial Output
+```
+minicom -D /dev/ttyACM0 -b 115200
+```
+
+or use screen
+```
+screen /dev/ttyACM0 115200
+```
+
+Note
+<pre>
+- On macOS the device path is typically /dev/tty.usbmodem*
+- On Windows, check Device Manager for the COM port number and use PuTTY or a similar terminal
+</pre>
 ## Info - BeagleBone Black Rev D
 <pre>
 - The BeagleBone Black (BBB) Rev D is a low-cost, open-source single-board computer 
