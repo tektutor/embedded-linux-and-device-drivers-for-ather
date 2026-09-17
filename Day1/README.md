@@ -10,6 +10,8 @@ sudo apt install --no-install-recommends git cmake ninja-build gperf \
   python3-dev python3-pip python3-setuptools python3-tk python3-wheel \
   xz-utils file make gcc gcc-multilib g++-multilib libsdl2-dev libmagic1
 
+python3 -m venv ~/zephyr-venv
+source ~/zephyr-venv/bin/activate
 pip install west
 
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
