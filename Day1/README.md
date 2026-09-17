@@ -1,7 +1,7 @@
 # Day 1 
 
-## Lab - Flashing Zephyr on STM32 F446RE Nucleo
-<pre>
+## Lab - Flashing Zephyr on STM32 F446RE Nucleo ( Complementary exercise - not in our Training agenda )
+<pre> 
 Prerequisites
 - Install the Zephyr SDK and west tool first:
 </pre>
