@@ -19,10 +19,14 @@ source ~/.bashrc
 
 west --version
 ```
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/88072b23-256c-4101-ac78-f411cbb4b45b" />
 
 <pre> 
 Prerequisites
-- Install the Zephyr SDK and west tool first:
+- Install the Zephyr SDK and west tool first
+- west update will clones around 70+ Git repositories
+- Total west update might require about 2~3 GB 
+- Make sure you have atleast 5GB+ free space 
 </pre>
 ```
 west init ~/zephyrproject
@@ -31,6 +35,9 @@ west update
 west zephyr-export
 pip install -r ~/zephyrproject/zephyr/scripts/requirements.txt
 ```
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/ee363511-94cd-4a09-8fe2-dfa0622e89fe" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/8b1f68b8-186b-400c-aa0b-8da38cb3c4bb" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/3ad54253-04e1-4ce6-95c5-253e1f314196" />
 
 Download and install the Zephyr SDK for your platform. It bundles the ARM toolchain and host tools you need.
 ```
