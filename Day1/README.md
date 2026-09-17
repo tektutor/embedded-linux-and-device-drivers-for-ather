@@ -52,7 +52,7 @@ source zephyr/zephyr-env.sh
 Install Zephyr SDK
 ```
 cd ~
-rm -rf zephyrproject
+#rm -rf zephyrproject
 source ~/zephyr-venv/bin/activate
 west init -m https://github.com/zephyrproject-rtos/zephyr --mr v4.3.0 ~/zephyrproject
 cd ~/zephyrproject
