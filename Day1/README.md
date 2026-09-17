@@ -32,12 +32,16 @@ Prerequisites
 west init ~/zephyrproject
 cd ~/zephyrproject
 west update
-west zephyr-export
 pip install -r ~/zephyrproject/zephyr/scripts/requirements.txt
+west zephyr-export
 ```
 <img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/ee363511-94cd-4a09-8fe2-dfa0622e89fe" />
 <img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/8b1f68b8-186b-400c-aa0b-8da38cb3c4bb" />
 <img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/3ad54253-04e1-4ce6-95c5-253e1f314196" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/38ab75fc-cdd9-444e-96a3-d9cdfd75aa54" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/22697063-171b-42c6-a29e-dc240b46f63c" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/2ae3d608-5cd2-440c-9313-185e44b5c091" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/86286d34-a437-4b1f-adf2-a1355babdc28" />
 
 Download and install the Zephyr SDK for your platform. It bundles the ARM toolchain and host tools you need.
 ```
