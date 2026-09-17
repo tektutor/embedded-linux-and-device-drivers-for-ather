@@ -107,6 +107,11 @@ Note
 - On macOS the device path is typically /dev/tty.usbmodem*
 - On Windows, check Device Manager for the COM port number and use PuTTY or a similar terminal
 </pre>
+
+
+Under the ~/zephyrproject/zephyr, the samples/ directory has dozens of examples covering threads, timers, GPIO, UART, I2C, SPI, and more. Run ls samples/ to browse what's available.
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/61379ca5-e9d9-4711-bbb3-e1db4e3cf698" />
+
 ## Info - BeagleBone Black Rev D
 <pre>
 - The BeagleBone Black (BBB) Rev D is a low-cost, open-source single-board computer 
