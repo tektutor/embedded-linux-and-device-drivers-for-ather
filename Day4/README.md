@@ -426,3 +426,26 @@ minicom -D /dev/ttyACM0 -b 115200
   - ST ships GPIO toggle, UART echo, and timer examples specifically for your board
   - Start with one of those rather than writing everything from scratch
 </pre>
+
+
+## Lab - Board Bring up
+
+## Lab - LED Blink
+
+Through sysfs, using an on-board user LED
+```
+# Find the user LEDs supported by BBB board
+ls /sys/class/leds/
+
+# Point to the first user LED on the BBB Board
+LED=/sys/class/leds/beaglebone:green:usr0
+
+# Take manual control of the LED
+echo none | sudo tee ${LED}/trigger 
+# Turn ON the LED
+echo 1 | sudo tee ${LED}/brightness
+
+# Turn OFF the LED
+echo 0 | sudo tee ${LED}/brightness
+```
+
