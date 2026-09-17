@@ -4,6 +4,13 @@
 
 Install Zephyr SDK and west tools
 ```
+
+# Make sure you have python v3.14.x
+sudo apt update
+sudo apt install software-properties-common
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt install python3.14
+
 sudo apt update
 sudo apt install --no-install-recommends git cmake ninja-build gperf \
   ccache dfu-util device-tree-compiler wget \
