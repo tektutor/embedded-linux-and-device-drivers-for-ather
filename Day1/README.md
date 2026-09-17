@@ -257,13 +257,18 @@ echo 0 | sudo tee $LED/brightness
 Through the GPIO / register level, driving an external LED on P9_12 (with a series resistor to P9_1 GND):
 ```
 # confirm which chip/line P9_12 is on YOUR board:
-gpioinfo | grep -n P9_12
+for c in gpiochip0 gpiochip1 gpiochip2 gpiochip3; do
+  echo "== $c =="
+  gpioinfo $c | grep -i P9_12
+done
+# Output might look like
 # e.g. gpiochip0 line 28
-gpioset --by-name P9_12=1
-# LED on
-gpioset --by-name P9_12=0
-# LED off
-# register-level alternative (bare hardware): devmem2 on the GPIO data register
+
+# Turn ON LED
+gpioset --mode=time --sec=3 gpiochip0 28=1
+
+# Turn OFF LED
+gpioset --mode=time --sec=3 gpiochip0 28=0
 ```
 
 ## Lab - How to identify on which port my BBB and Nucleo boards are connected
