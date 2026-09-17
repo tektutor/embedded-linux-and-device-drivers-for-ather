@@ -1,12 +1,28 @@
 # Day 1 
 
 ## Lab - Flashing Zephyr on STM32 F446RE Nucleo ( Complementary exercise - not in our Training agenda )
+
+Install Zephyr SDK and west tools
+```
+sudo apt update
+sudo apt install --no-install-recommends git cmake ninja-build gperf \
+  ccache dfu-util device-tree-compiler wget \
+  python3-dev python3-pip python3-setuptools python3-tk python3-wheel \
+  xz-utils file make gcc gcc-multilib g++-multilib libsdl2-dev libmagic1
+
+pip install west
+
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+
+west --version
+```
+
 <pre> 
 Prerequisites
 - Install the Zephyr SDK and west tool first:
 </pre>
 ```
-pip install west
 west init ~/zephyrproject
 cd ~/zephyrproject
 west update
