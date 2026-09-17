@@ -407,12 +407,22 @@ minicom -D /dev/ttyACM0 -b 115200
 ## Info - Step by Step procedure that one can follow to build their first application for a particular board
 <pre>
 - In our case, we have STM32 Nucleo F446RE
-Step 1: Identify Your Exact MCU
-- Nucleo-F446RE board carries the STM32F446RET6 microcontroller
-- That full part number tells you everything
-  R = 64-pin LQFP package
-  E = 512 KB Flash
-  T = LQFP package type
-  6 = industrial temperature range (-40 to 85°C)
-- You need this to pick the right startup file, linker script, and peripheral register definitions
+- Step 1: Identify Your Exact MCU
+  - Nucleo-F446RE board carries the STM32F446RET6 microcontroller
+  - That full part number tells you everything
+    R = 64-pin LQFP package
+    E = 512 KB Flash
+    T = LQFP package type
+    6 = industrial temperature range (-40 to 85°C)
+  - You need this to pick the right startup file, linker script, and peripheral register definitions
+- Step 2: Get the STM32CubeF4 Firmware Package
+  - ST provides all drivers, headers, and startup code in a single package called STM32CubeF4.
+  - Navigate to st.com website and search STM32CubeF4 or directly go to https://www.st.com/en/embedded-software/stm32cubef4.html
+  - Click "Get Software" followed by "Get Latest", this will download stm32cubef4-v1-28-0.zip ( as of today this is the latest, might vary later )
+  - You may also download the Databrief, to understand what is there in the zip package
+- Step 3: Extract the zip and navigate to Drivers/CMSIS/Device/ST/STM32F4xx/Include/ and confirm you can see stm32f446xx.h
+  - That file is the proof you have the right package for your Nucleo-F446RE board
+- Step 4: Then check Projects/STM32F446RE-Nucleo/ for ready-made example projects. 
+  - ST ships GPIO toggle, UART echo, and timer examples specifically for your board
+  - Start with one of those rather than writing everything from scratch
 </pre>
