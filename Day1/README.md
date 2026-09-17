@@ -183,3 +183,54 @@ Under the ~/zephyrproject/zephyr, the samples/ directory has dozens of examples 
     - Linux provides the /dev/rpmsg_pruX character device for message passing between the ARM core and PRUs
     - You can also map shared memory directly from a Linux userspace application
 </pre>
+
+
+## Lab 1 — Board bring-up
+Objective: reach the serial console, log in, and read the board's identity from /proc and /sys.
+
+```
+# on the HOST: connect FTDI (GND, TX->board RX, RX<-board TX), then open the console
+ls /dev/ttyUSB*
+picocom -b 115200 /dev/ttyUSB0
+# exit with Ctrl-A Ctrl-X
+# on the BOARD, after login:
+uname -a
+cat /proc/cpuinfo
+cat /proc/iomem | head
+ls /sys/class/gpio /sys/class/leds
+```
+Expected: a login prompt at 115200 8N1; cpuinfo shows AM33xx; iomem lists the SoC regions.
+
+## Lab 2 — Toggle an LED two ways
+Objective: see the difference between an abstraction and the bare hardware.
+
+<img width="960" height="600" alt="image" src="https://github.com/user-attachments/assets/36b67573-1f36-4c45-9d64-21f36e3ff912" />
+Safety: always a series resistor; the GPIO is 3.3 V. LED long leg (anode) to P9_12, short leg (cathode)
+toward the resistor and GND.
+
+Through sysfs, using an on-board user LED:
+```
+ls /sys/class/leds/
+LED=/sys/class/leds/beaglebone:green:usr0
+echo none | sudo tee $LED/trigger
+# take manual control
+echo 1
+| sudo tee $LED/brightness
+# on
+echo 0
+| sudo tee $LED/brightness
+# off
+```
+
+Through the GPIO / register level, driving an external LED on P9_12 (with a series resistor to P9_1 GND):
+```
+# confirm which chip/line P9_12 is on YOUR board:
+gpioinfo | grep -n P9_12
+# e.g. gpiochip0 line 28
+gpioset --by-name P9_12=1
+# LED on
+gpioset --by-name P9_12=0
+# LED off
+# register-level alternative (bare hardware): devmem2 on the GPIO data register
+```
+
