@@ -438,14 +438,27 @@ Through sysfs, using an on-board user LED
 ls /sys/class/leds/
 
 # Point to the first user LED on the BBB Board
-LED=/sys/class/leds/beaglebone:green:usr0
+LED1=/sys/class/leds/beaglebone:green:usr0
 
 # Take manual control of the LED
-echo none | sudo tee ${LED}/trigger 
-# Turn ON the LED
-echo 1 | sudo tee ${LED}/brightness
+echo none | sudo tee ${LED1}/trigger 
+# Turn ON the LED1
+echo 1 | sudo tee ${LED1}/brightness
 
-# Turn OFF the LED
-echo 0 | sudo tee ${LED}/brightness
+# Turn OFF the LED1
+echo 0 | sudo tee ${LED1}/brightness
+
+# If you wish to control the second user LED on the BBB Board
+# Point to the first user LED on the BBB Board
+LED2=/sys/class/leds/beaglebone:green:usr1
+
+# Take manual control of the LED
+echo none | sudo tee ${LED2}/trigger 
+
+# Turn ON the LED2
+echo 1 | sudo tee ${LED1}/brightness
+
+# Turn OFF the LED2
+echo 0 | sudo tee ${LED2}/brightness
 ```
 
