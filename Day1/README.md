@@ -57,6 +57,9 @@ tar xf zephyr-sdk-0.17.2_linux-x86_64.tar.xz
 cd zephyr-sdk-0.17.2
 ./setup.sh
 ```
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/88890056-13aa-489c-a339-1119d553d5cc" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/ae648bc8-3fb9-4489-b16f-425d20bb4040" />
+
 
 Build a Sample App
 - The Nucleo F446RE board identifier in Zephyr is nucleo_f446re
