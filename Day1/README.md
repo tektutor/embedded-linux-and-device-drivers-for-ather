@@ -52,13 +52,17 @@ source zephyr/zephyr-env.sh
 Install Zephyr SDK
 ```
 cd ~
-wget https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.17.2/zephyr-sdk-0.17.2_linux-x86_64.tar.xz
-tar xf zephyr-sdk-0.17.2_linux-x86_64.tar.xz
-cd zephyr-sdk-0.17.2
-./setup.sh
+rm -rf zephyrproject
+source ~/zephyr-venv/bin/activate
+west init -m https://github.com/zephyrproject-rtos/zephyr --mr v4.3.0 ~/zephyrproject
+cd ~/zephyrproject
+west update
+west zephyr-export
+pip install -r zephyr/scripts/requirements.txt
 ```
-<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/88890056-13aa-489c-a339-1119d553d5cc" />
-<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/ae648bc8-3fb9-4489-b16f-425d20bb4040" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/a48b1a4b-b1a7-486e-a013-7207be680839" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/82b1d19e-ff90-49c3-8833-42c913b5bbf8" />
+
 
 
 Build a Sample App
@@ -67,12 +71,17 @@ Build a Sample App
 cd ~/zephyrproject/zephyr
 west build -p always -b nucleo_f446re samples/basic/blinky
 ```
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/17b658c3-b9b2-46b5-ad6c-de9ce74c9659" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/d8f19a5c-e7c7-44ef-9f65-4fb23d715cb3" />
+
 
 Flash the Board
 Connect the Nucleo board via its onboard ST-Link USB port, then run
 ```
-west flash
+west flash  --runner openocd
 ```
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/de478100-0052-4594-9177-21868ba79459" />
+
 
 Troubleshooting wesh flash failed issue
 Check USB permissions (Linux). Add a udev rule so your user can access the ST-Link without sudo
@@ -85,6 +94,8 @@ Monitor Serial Output
 ```
 minicom -D /dev/ttyACM0 -b 115200
 ```
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/2610e38d-b774-4cf2-9c7a-a76e14d8ac0b" />
+
 
 or use screen
 ```
