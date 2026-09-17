@@ -239,11 +239,10 @@ ls /sys/class/leds/
 LED=/sys/class/leds/beaglebone:green:usr0
 echo none | sudo tee $LED/trigger
 # take manual control
-echo 1
-| sudo tee $LED/brightness
+echo 1 | sudo tee $LED/brightness
 # on
-echo 0
-| sudo tee $LED/brightness
+
+echo 0 | sudo tee $LED/brightness
 # off
 ```
 
