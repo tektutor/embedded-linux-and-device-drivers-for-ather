@@ -49,6 +49,15 @@ cd ~/zephyrproject
 source zephyr/zephyr-env.sh
 ```
 
+Install Zephyr SDK
+```
+cd ~
+wget https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.17.2/zephyr-sdk-0.17.2_linux-x86_64.tar.xz
+tar xf zephyr-sdk-0.17.2_linux-x86_64.tar.xz
+cd zephyr-sdk-0.17.2
+./setup.sh
+```
+
 Build a Sample App
 - The Nucleo F446RE board identifier in Zephyr is nucleo_f446re
 ```
