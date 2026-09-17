@@ -114,7 +114,7 @@ Under the ~/zephyrproject/zephyr, the samples/ directory has dozens of examples 
 
 ---
 
-## Info - BeagleBone Black Rev D
+## Info - BeagleBone Black Rev D (BBB)
 <pre>
 - The BeagleBone Black (BBB) Rev D is a low-cost, open-source single-board computer 
   made by BeagleBoard.org Foundation
@@ -189,6 +189,30 @@ Under the ~/zephyrproject/zephyr, the samples/ directory has dozens of examples 
 
 ## Lab 1 — Board bring-up
 Objective: reach the serial console, log in, and read the board's identity from /proc and /sys.
+
+J1 Serial Debug Header on BeagleBone Black
+J1 is the 6-pin header near the P9 expansion header. Pin 1 is marked with a small dot or triangle on the board, closest to the USB connector.
+<pre>
+J1 Pinout (looking at the board, pin 1 marked):
+
+Pin 1: GND
+Pin 2: NC
+Pin 3: NC
+Pin 4: RX (input to BBB)
+Pin 5: TX (output from BBB)
+Pin 6: NC
+</pre>
+
+```
+Wiring to FTDI
+You need only 3 jumper wires:
+<pre>
+FTDI            BBB J1
+----            ------
+GND  --------  Pin 1 (GND)
+TXD  --------  Pin 4 (RX)
+RXD  --------  Pin 5 (TX)
+</pre>
 
 ```
 # on the HOST: connect FTDI (GND, TX->board RX, RX<-board TX), then open the console
