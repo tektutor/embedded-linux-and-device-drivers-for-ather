@@ -185,6 +185,7 @@ Under the ~/zephyrproject/zephyr, the samples/ directory has dozens of examples 
     - Linux provides the /dev/rpmsg_pruX character device for message passing between the ARM core and PRUs
     - You can also map shared memory directly from a Linux userspace application
 </pre>
+<img width="1500" height="1102" alt="image" src="https://github.com/user-attachments/assets/51de772c-d901-4304-a652-6262cc15e314" />
 
 
 ## Lab 1 — Board bring-up
