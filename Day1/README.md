@@ -258,3 +258,13 @@ gpioset --by-name P9_12=0
 # LED off
 # register-level alternative (bare hardware): devmem2 on the GPIO data register
 ```
+
+## Lab - How to identify on which port my BBB and Nucleo boards are connected
+```
+ls /dev/ttyACM* /dev/ttyUSB*
+
+udevadm info -a -n /dev/ttyACM0 | grep -E "idVendor|idProduct|manufacturer|product"
+udevadm info -a -n /dev/ttyACM1 | grep -E "idVendor|idProduct|manufacturer|product"
+```
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/a53f90ce-b5e8-4280-be31-a06756cd3874" />
+
