@@ -102,6 +102,80 @@ gpioset -t 500ms P9_12=1
 ```
 
 ## Lab - Build and flash U-Boot
+Install this on your laptop
 ```
+sudo apt update
+sudo apt install -y build-essential git bison flex libssl-dev \
+        device-tree-compiler swig python3-dev python3-setuptools \
+        gcc-arm-linux-gnueabihf u-boot-tools libgnutls28-dev
+
+arm-linux-gnueabihf-gcc --version
+```
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/e082f132-e03b-4f16-8ac1-a5d77764a317" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/99480b95-c582-4e00-88ec-e32faf32633f" />
+
+Download the U-Boot source code to build it yourself on your laptop
+```
+cd ~
+git clone https://source.denx.de/u-boot/u-boot.git
+cd u-boot
+
+# pin a known release so the build is repeatable
+git checkout v2026.07
+
+# point the build at the cross compiler
+export CROSS_COMPILE=arm-linux-gnueabihf-
+
+# select the BeagleBone Black configuration
+ls configs/ | grep -iE 'am335x|bone|beagle'
+make am335x_evm_defconfig
+
+# build
+make -j"$(nproc)"
+
+ls -l MLO u-boot.img
 
 ```
+
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/970dc4db-5b37-4df8-9565-9cc10782fb70" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/824c737d-14a4-4e4b-81f3-8d120e8d0a6c" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/3176c1c2-2534-4ab9-8f14-70177ab60d72" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/229739e6-3d9d-4925-8d18-4d77e069ba6e" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/1317ae2a-df0f-4e0a-9b40-88408464159b" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/97057b53-ce7f-4898-922b-41ba23f5e5a4" />
+
+If you wish to make some custom changes like add your custom name
+```
+cd ~/u-boot
+grep -n "board_init\|board_late_init" board/ti/am335x/board.c
+# Edit board/ti/am335x/board.c and update the beginning of the board_late_init(void) function as shown in screenshot and save
+vim  board/ti/am335x/board.c
+cat board/ti/am335x/board.c | grep Jegan
+
+export ARCH=arm
+export CROSS_COMPILE=arm-linux-gnueabihf-
+make -j"$(nproc)"
+grep -n "TekTutor" board/ti/am335x/board.c   # confirm your lines are there
+ls -l MLO u-boot.img                          # confirm rebuilt 
+```
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/79eccad3-f823-4dcf-87c1-018528133ede" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/69bb836d-a104-4b57-8ed8-073bd97b4eb5" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/f5e9d539-7974-424b-a75c-687d2d314de0" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/349e95ce-95b2-4b45-8182-88a6243d7ad6" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/cddd3483-9a2d-4fca-83fb-55dba567af6b" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/cc99a234-db70-49fe-83c6-f52e10561cf0" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/9d3868ad-6d85-46d9-8e94-09aae4b605e9" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/b93581fc-6b93-4bc3-8766-1075d74575fd" />
+
+Reflash the Uboot(bootloader) in SDCard and flash
+```
+sudo mkdir -p /mnt/sdboot
+cd ~/u-boot
+sudo mount /dev/mmcblk0p1 /mnt/sdboot
+sudo cp MLO /mnt/sdboot/ && sync
+sudo cp u-boot.img /mnt/sdboot/ && sync
+sudo umount /mnt/sdboot
+```
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/d45b3cc8-92ea-4d8e-a9e1-0477428f64d9" />
+
+Now, boot your BBB board with FTDI to watch your custom u-boot bootloader banner.
