@@ -70,6 +70,30 @@ rm /tmp/bbb.img
 <img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/fdc83585-5f68-4fb7-91a8-67a1a592b803" />
 <img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/08b2ce7c-7724-40fb-b29a-5a1c17a109ad" />
 
+Power off your BBB board, insert your microSD card in your BBB board.  On your laptop start
+```
+sudo ls -l /dev/ttyACM*
+sudo minicom -D /dev/ttyACM0 -b 115200
+```
+
+Troubleshooting, Device /dev/ttyACM0 is locked issue ( Generally, happens if another session is already open or closed abruptly )
+```
+# check which application or user has opened it
+sudo lsof /dev/ttyACM0
+sudo fuser -v /dev/ttyACM0
+
+# minicom / uucp lock files live here
+ls -l /var/lock/LCK..ttyACM0 /run/lock/LCK..ttyACM0 2>/dev/null
+sudo rm -f /var/lock/LCK..ttyACM0 /run/lock/LCK..ttyACM0
+
+# If a real process, holds it
+sudo pkill -f minicom          # kill leftover minicom sessions
+
+# Now, this should work
+sudo minicom -D /dev/ttyACM0 -b 115200
+```
+
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/a9859a74-48a5-4377-8934-504aedbf0e7a" />
 
 
 ## Lab - Build and flash U-Boot
