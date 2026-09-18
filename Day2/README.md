@@ -1,22 +1,35 @@
 # Day 2
 
 ## Lab - Flash latest trixie Debian Embedded Linux with SD Card and boot your BeagleBone Black Board
+**Note - Do not ignore this**
+<pre>
+dd is unforgiving: of=/dev/mmcblk0 writes the whole card, and pointing it at the wrong device 
+(your laptop's disk, often /dev/nvme0n1 or /dev/sda) will destroy that disk. Run lsblk, 
+and confirm the device name and size match your SD card, not your system disk. 
+Write to the whole card (mmcblk0), not a partition (mmcblk0p1)  
+</pre>
 ```
 # On your laptop
-# Download the latest IOT (non-gui) debian image from www.beagleboard.org/distros
+# Download the latest IOT (non-gui - avoid xfce) debian image from www.beagleboard.org/distros
 cd ~/Downloads
 wget https://files.beagle.cc/file/beagleboard-public-2021/images/am335x-debian-13.7-base-v6.18-armhf-2026-09-15-4gb.img.xz
 ls -l ls am335x-debian-*.img.xz
 
 # On your laptop
 # Insert your microSD card in your laptop, you may have to use full-size SD Card adapter, make sure the write protection is OFF
+# nvme is your laptop SSD - leave that alone
 lsblk # Find your card (a disk like mmcblk0 or sdb); read the RO column ( 1 - indicates it is write protected, ideally value is 0 )
 
-# On your laptop
+# On your laptop terminal
 xzcat am335x-debian-13.7-base-v6.18-armhf-2026-09-15-4gb.img.xz \
 | sudo dd of=/dev/mmcblk0 bs=4M status=progress conv=fsync
 sync
 ```
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/2edce19a-396d-47de-8232-7e0afc0d97ee" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/7ea784be-a521-467e-bfed-2bae7aa63bf4" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/1c833906-d8bb-46cd-8258-14a9ca6d1e56" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/efd9d404-3933-4664-a956-8fdd2a11419f" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/fdc83585-5f68-4fb7-91a8-67a1a592b803" />
 
 
 
