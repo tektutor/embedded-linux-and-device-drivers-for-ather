@@ -179,3 +179,32 @@ sudo umount /mnt/sdboot
 <img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/d45b3cc8-92ea-4d8e-a9e1-0477428f64d9" />
 
 Now, boot your BBB board with FTDI to watch your custom u-boot bootloader banner.
+
+## Lab - Booting OS from SDCard using your custom u-boot boo tloader in SDCard
+Assumption is, you have already flashed your SD-Card with Trixie OS and copied your custom u-boot bootloader on your SD-Card.
+
+Now, hold the S2 button on your BBB Board and power it on, wait until you get the u-boot prompt ==>
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/8b1e714b-d538-43fb-9d17-3512730b9d06" />
+
+You need to type this command on the u-boot promt ==>
+```
+setenv bootcmd 'load mmc 0:3 0x82000000 /boot/vmlinuz-6.18.52-bone54; load mmc 0:3 0x88000000 /boot/dtbs/6.18.52-bone54/am335x-boneblack.dtb; load mmc 0:3 0x88080000 /boot/initrd.img-6.18.52-bone54; setenv irdsize ${filesize}; setenv bootargs console=ttyS0,115200n8 root=/dev/mmcblk0p3 rw rootfstype=ext4 rootwait fsck.repair=yes coherent_pool=1M net.ifnames=0 rng_core.default_quality=100; bootz 0x82000000 0x88080000:${irdsize} 0x88000000'
+```
+
+Then type in the prompt ==>
+```
+saveenv
+```
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/a342e15c-56ea-4cfc-81db-651634d1f874" />
+
+Test without rebooting
+```
+boot
+```
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/f87c5393-caf2-4bbb-8f94-8bc2153abe76" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/d5e7afbb-215b-4198-8baa-5a17872cb0af" />
+
+Shutdown your BBB board, hold the S2 button and Power ON to see your custom u-boot loading the OS on SD-Card automatically
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/4302d3b6-4870-4e0e-8a75-bd1e9fadb4e4" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/15fc0b2b-f59f-4290-b5bb-f7ba610f8a41" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/296b1625-d655-4a77-ac23-9b5efe92daa4" />
