@@ -94,6 +94,7 @@ sudo minicom -D /dev/ttyACM0 -b 115200
 ```
 
 <img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/a9859a74-48a5-4377-8934-504aedbf0e7a" />
+<img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/1005bae5-ab64-4659-a960-1aaafa5a8eda" />
 
 
 ## Lab - Build and flash U-Boot
