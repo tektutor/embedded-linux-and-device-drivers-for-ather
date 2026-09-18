@@ -96,6 +96,10 @@ sudo minicom -D /dev/ttyACM0 -b 115200
 <img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/a9859a74-48a5-4377-8934-504aedbf0e7a" />
 <img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/1005bae5-ab64-4659-a960-1aaafa5a8eda" />
 
+You can run the LED Blink, on your newly flashed Trixie 13.7 IOT - SD Card image
+```
+gpioset -t 500ms P9_12=1
+```
 
 ## Lab - Build and flash U-Boot
 ```
