@@ -80,7 +80,9 @@ On your beaglebone board, create a folder for your led-driver and paste the code
 #include <linux/version.h>
 
 #define NAME     "tektutor_led"
-#define LED_GPIO 540 // P9_12 = gpiochip0(offset- 512) line 28, base 0 -> global 28, so we need to add 512 + 28 = 540
+
+// P9_12 = gpiochip0(offset- 512) line 28, base 0 -> global 28, so we need to add 512 + 28 = 540
+#define LED_GPIO 540 
 
 static dev_t         devno;
 static struct cdev   my_cdev;
