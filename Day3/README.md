@@ -2,6 +2,7 @@
 
 ## Info - Resetting eMMC debian password
 Step 1: Boot your Beaglebone Board from your SDCard
+
 Step 2: From the Beaglebone linux prompt
 ```
 lsblk
