@@ -29,7 +29,7 @@ sudo poweroff
 
 ## Lab - Hello World module
 hello.c
-<pre>
+```
 #include <linux/module.h>
 #include <linux/kernel.h>
   
@@ -44,7 +44,7 @@ static void __exit hello_exit(void) {
 module_init(hello_init);
 module_exit(hello_exit);
 MODULE_LICENSE("GPL");
-</pre>
+```
 
 Makefile (the indented line must start with a real TAB)
 <pre>
