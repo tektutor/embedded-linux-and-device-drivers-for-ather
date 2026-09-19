@@ -180,7 +180,7 @@ sudo umount /mnt/sdboot
 
 Now, boot your BBB board with FTDI to watch your custom u-boot bootloader banner.
 
-## Lab - Booting OS from SDCard using your custom u-boot boo tloader in SDCard
+## Lab - Booting OS from SDCard using your custom u-boot bootloader in SDCard
 Assumption is, you have already flashed your SD-Card with Trixie OS and copied your custom u-boot bootloader on your SD-Card.
 
 Now, hold the S2 button on your BBB Board and power it on, wait until you get the u-boot prompt ==>
