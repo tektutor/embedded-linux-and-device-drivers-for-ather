@@ -188,9 +188,14 @@ Now, hold the S2 button on your BBB Board and power it on, wait until you get th
 
 You need to type this command on the u-boot promt ==>
 ```
-setenv bootcmd 'load mmc 0:3 0x82000000 /boot/vmlinuz-6.18.52-bone54; load mmc 0:3 0x88000000 /boot/dtbs/6.18.52-bone54/am335x-boneblack.dtb; load mmc 0:3 0x88080000 /boot/initrd.img-6.18.52-bone54; setenv irdsize ${filesize}; setenv bootargs console=ttyS0,115200n8 root=/dev/mmcblk0p3 rw rootfstype=ext4 rootwait fsck.repair=yes coherent_pool=1M net.ifnames=0 rng_core.default_quality=100; bootz 0x82000000 0x88080000:${irdsize} 0x88000000'
+setenv bootcmd 'load mmc 0:3 0x82000000 /boot/vmlinuz-6.18.52-bone54;
+                load mmc 0:3 0x88000000 /boot/dtbs/6.18.52-bone54/am335x-boneblack.dtb;
+                load mmc 0:3 0x88080000 /boot/initrd.img-6.18.52-bone54;
+                setenv irdsize ${filesize};
+                setenv bootargs console=ttyS0,115200n8 root=/dev/mmcblk0p3 rw rootfstype=ext4 rootwait fsck.repair=yes coherent_pool=1M net.ifnames=0 rng_core.default_quality=100; bootz 0x82000000 0x88080000:${irdsize} 0x88000000'
 ```
-Understanding the above command, basically we are configuring our custom u-boot to load the OS to find the kernel and load it
+Understanding the above command, basically we are configuring our custom u-boot to load the OS to 
+find the kernel and load it
 <pre>
 - load mmc 0:3 0x82000000 /boot/vmlinuz-6.18.52-bone54  
 - Loads the kernel, load reads a file from storage into RAM
@@ -210,16 +215,23 @@ Understanding the above command, basically we are configuring our custom u-boot 
 - setenv bootargs console=ttyS0,115200n8 root=/dev/mmcblk0p3 rw rootfstype=ext4 rootwait fsck.repair=yes coherent_pool=1M net.ifnames=0 rng_core.default_quality=100
 - bootargs is the text passed to the kernel as its command line. Piece by piece
   - console=ttyS0,115200n8, send kernel messages to the serial console at 115200 baud
-  - root=/dev/mmcblk0p3, the root filesystem is on the SD card, partition 3. Critical: this must point at the real rootfs partition
+  - root=/dev/mmcblk0p3, the root filesystem is on the SD card, partition 3. Critical: this must point at 
+    the real rootfs partition
   - rw, mount root read-write
   - rootfstype=ext4, the filesystem type
   - rootwait, wait for the storage to appear before mounting (SD/eMMC can be slow to enumerate).
-  - The rest (fsck.repair=yes coherent_pool=1M net.ifnames=0 rng_core.default_quality=100) are settings copied from the image's own uEnv.txt so the OS behaves as the vendor intended (auto-repair the filesystem, a memory pool size, predictable network naming, RNG quality).
+  - The rest (fsck.repair=yes coherent_pool=1M net.ifnames=0 rng_core.default_quality=100) are settings copied 
+    from the image's own uEnv.txt so the OS behaves as the vendor intended (auto-repair the filesystem, 
+    a memory pool size, predictable network naming, RNG quality).
 
 - bootz 0x82000000 0x88080000:${irdsize} 0x88000000
-- bootz boots a zImage-format ARM kernel. Its three arguments are: kernel address, initrd address:size, device tree address.
+- bootz boots a zImage-format ARM kernel. 
+  Its three arguments are: 
+  - kernel address
+  - initrd address:size and 
+  - device tree address
   - 0x82000000, the kernel we loaded
-  - 0x88080000:${irdsize}, the initrd address, followed by its size (that's what we saved earlier).
+  - 0x88080000:${irdsize}, the initrd address, followed by its size
   - 0x88000000, the device tree
   - The order is always: kernel, initrd, dtb
 </pre>
