@@ -1,5 +1,31 @@
 # Day 3
 
+## Info - Resetting eMMC debian password
+Step 1: Boot your Beaglebone Board from your SDCard
+Step 2: From the Beaglebone linux prompt
+```
+lsblk
+```
+Step 3: Mount your emmc partition
+```
+sudo mkdir -p /mnt/emmc
+sudo mount /dev/mmcblk1p1 /mnt/emmc
+ls /mnt/emmc
+```
+
+Step 4: Change the password, by making eMMC's filesystem as your temporary root
+```
+sudo chroot /mnt/emmc /bin/bash
+passwd eagle
+exit
+```
+
+Step 5: Unmount cleanly and reboot to eMMC
+```
+sudo umount /mnt/emmc
+sudo poweroff
+```
+
 ## Lab - Hello World module
 hello.c
 <pre>
