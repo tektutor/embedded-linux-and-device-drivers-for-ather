@@ -80,7 +80,7 @@ On your beaglebone board, create a folder for your led-driver and paste the code
 #include <linux/version.h>
 
 #define NAME     "tektutor_led"
-#define LED_GPIO 28              // P9_12 = gpiochip0 line 28, base 0 -> global 28
+#define LED_GPIO 540 // P9_12 = gpiochip0 line 28, base 0 -> global 28
 
 static dev_t         devno;
 static struct cdev   my_cdev;
@@ -190,10 +190,12 @@ echo 0 | sudo tee /dev/tektutor_led      # LED OFF
 sudo rmmod led_driver
 
 # check turns ON LED
+sudo -i
 echo 1 > /dev/tektutor_led 
 
 # check turns OFF LED
-echo 0 > /dev/tektutor_led 
+echo 0 > /dev/tektutor_led
 
+exit
 ```
 
