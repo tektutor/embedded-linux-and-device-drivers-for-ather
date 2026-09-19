@@ -186,7 +186,61 @@ Assumption is, you have already flashed your SD-Card with Trixie OS and copied y
 Now, hold the S2 button on your BBB Board and power it on, wait until you get the u-boot prompt ==>
 <img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/8b1e714b-d538-43fb-9d17-3512730b9d06" />
 
-You need to type this command on the u-boot promt ==>
+You need to discover your board's values (run these first, note the output)
+Find which number is the SD card. Note it down as X
+```
+mmc list
+```
+my output 
+<pre>
+=> mmc list
+OMAP SD/MMC: 0 (SD)
+OMAP SD/MMC: 1 (eMMC)
+</pre>
+
+Find the partitions on your SD Card
+```
+part list mmc 0
+```
+my output
+<pre>
+=> part list mmc 0
+
+Partition Map for mmc device 0  --   Partition Type: DOS
+
+Part    Start Sector    Num Sectors    UUID        Type
+  1     8192          73728         d53c5712-01    0c Boot
+  2     81920         1048576       d53c5712-02    82
+  3     1130496       61203423      d53c5712-03    83
+</pre>       
+In the above output
+<pre>
+0c = FAT32 (the boot partition; also flagged "Boot").
+82 = Linux swap
+83 = Linux filesystem (the root filesystem)
+Find the root filesystem partition, the Linux partition (Type 83), which is the large one. Note its number as Y.
+</pre>
+
+Find what is there in SDCard Partition 1 ( 0 = SDCard, 1 = Partition 1 ), in the command below
+This is nothing but /boot partition that has, it has only boot loader files like MLO, u-boot.img but no OS files
+```
+=> ls mmc 0:1
+```
+my output
+<pre>
+=> ls mmc 0:1
+       52   ID.txt
+      204   START.HTM
+     2599   sysconf.txt
+            services/
+   110216   MLO
+  1569192   u-boot.img
+
+5 file(s), 1 dir(s)
+</pre>
+
+
+You need to type this command on the u-boot prompt ==>
 ```
 setenv bootcmd 'load mmc 0:3 0x82000000 /boot/vmlinuz-6.18.52-bone54;
                 load mmc 0:3 0x88000000 /boot/dtbs/6.18.52-bone54/am335x-boneblack.dtb;
@@ -197,7 +251,16 @@ setenv bootcmd 'load mmc 0:3 0x82000000 /boot/vmlinuz-6.18.52-bone54;
 Understanding the above command, basically we are configuring our custom u-boot to load the OS to 
 find the kernel and load it
 <pre>
-- load mmc 0:3 0x82000000 /boot/vmlinuz-6.18.52-bone54  
+- A processor has an address space, a range of numbers the CPU can put on its address bus to reach things
+- On the 32-bit AM335x, that address space is 0x00000000 to 0xFFFFFFFF (4 GB of addressable range)
+- Texas Instruments, when they designed the AM335x, decided which ranges of that address space connect to what 
+- This is the memory map, and it's documented in the AM335x Technical Reference Manual
+- BBB has 512 MB RAM starting at 0x80000000 and ends at 0x9FFFFFFF ( This is fixed by Texas Instruments - we can't change )
+  - kernel at 0x82000000 ( can be changed to different address but if not configured correctly, your OS will not boot )
+  - dtb at 0x88000000 ( can be changed to different address but if not configured correctly, your OS will not boot )
+  - initrd at 0x88080000 ( can be changed to different address but if not configured correctly, your OS will not boot )
+- These are spaced apart so they don't collide. They are standard, safe values for any 512 MB BeagleBone
+- load mmc 0:3 0x82000000 /boot/vmlinuz-6.18.52-bone54  (X=0,Y=3)
 - Loads the kernel, load reads a file from storage into RAM
 - mmc 0:3 means mmc device 0 (the SD card), partition 3 (the root filesystem)
 - On this board, mmc 0 = SD, mmc 1 = eMMC, you need to find yours from your u-boot prompt by typing 
