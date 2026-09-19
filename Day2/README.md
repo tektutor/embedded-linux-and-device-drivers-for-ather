@@ -191,7 +191,7 @@ Find which number is the SD card. Note it down as X
 ```
 mmc list
 ```
-my output 
+my output, my external SDCard value is 0 (X=0)
 <pre>
 => mmc list
 OMAP SD/MMC: 0 (SD)
@@ -219,6 +219,7 @@ In the above output
 82 = Linux swap
 83 = Linux filesystem (the root filesystem)
 Find the root filesystem partition, the Linux partition (Type 83), which is the large one. Note its number as Y.
+My root filesystem partition is 3 (Y=3) 
 </pre>
 
 Find what is there in SDCard Partition 1 ( 0 = SDCard, 1 = Partition 1 ), in the command below
@@ -238,7 +239,6 @@ my output
 
 5 file(s), 1 dir(s)
 </pre>
-
 
 You need to type this command on the u-boot prompt ==>
 ```
@@ -316,3 +316,15 @@ Shutdown your BBB board, hold the S2 button and Power ON to see your custom u-bo
 <img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/4302d3b6-4870-4e0e-8a75-bd1e9fadb4e4" />
 <img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/15fc0b2b-f59f-4290-b5bb-f7ba610f8a41" />
 <img width="1920" height="1200" alt="image" src="https://github.com/user-attachments/assets/296b1625-d655-4a77-ac23-9b5efe92daa4" />
+
+
+References
+<pre>
+- Document ID: SPRUH73 (M335x Technical Reference Manual) - https://www.ti.com/lit/pdf/spruh73
+- Document ID: SPRS717 (Datasheet) - https://www.ti.com/lit/pdf/sprs717
+- https://www.ti.com/product/AM3358
+- BeagleBone Black System Reference Manual - https://docs.beagleboard.org/latest/boards/beaglebone/black/ 
+- Linux ARM booting rules - https://docs.kernel.org/arch/arm/booting.html
+- https://docs.u-boot.org/
+- https://www.kernel.org/doc/Documentation/arm/booting.rst
+</pre>
