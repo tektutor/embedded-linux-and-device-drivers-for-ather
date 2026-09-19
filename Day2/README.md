@@ -320,7 +320,7 @@ Shutdown your BBB board, hold the S2 button and Power ON to see your custom u-bo
 
 References
 <pre>
-- Document ID: SPRUH73 (M335x Technical Reference Manual) - https://www.ti.com/lit/pdf/spruh73
+- Document ID: SPRUH73 (AM335x Technical Reference Manual) - https://www.ti.com/lit/pdf/spruh73
 - Document ID: SPRS717 (Datasheet) - https://www.ti.com/lit/pdf/sprs717
 - https://www.ti.com/product/AM3358
 - BeagleBone Black System Reference Manual - https://docs.beagleboard.org/latest/boards/beaglebone/black/ 
