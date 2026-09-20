@@ -4,6 +4,9 @@
 
 <img width="835" height="736" alt="image" src="https://github.com/user-attachments/assets/a74dfb0c-d45d-4a1e-8383-fdc449a8e6bd" />
 
+<img width="752" height="780" alt="image" src="https://github.com/user-attachments/assets/93cfd391-99bb-40ad-b769-df9cc1a53c60" />
+
+
 ## Lab - CAN bring-up and sniffing
 
 Install CAN tools
