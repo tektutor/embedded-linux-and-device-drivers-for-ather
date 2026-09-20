@@ -6,6 +6,146 @@
 
 <img width="752" height="780" alt="image" src="https://github.com/user-attachments/assets/93cfd391-99bb-40ad-b769-df9cc1a53c60" />
 
+Nucleo Firmware code is
+<pre>
+// my-project.c - CAN1 ping-pong on Nucleo-F446RE at 125 kbit/s (libopencm3)
+// PB9=CAN1_TX, PB8=CAN1_RX. USART2 debug on /dev/ttyACM0 @115200.
+// Phase 1: ping (ID 0x321) once per second until a reply is received.
+// Phase 2: respond to each received frame with a pong (ID 0x321).
+#include <libopencm3/stm32/rcc.h>
+#include <libopencm3/stm32/gpio.h>
+#include <libopencm3/stm32/can.h>
+#include <libopencm3/stm32/usart.h>
+#include <stddef.h>
+
+static void clock_setup(void)
+{
+    rcc_clock_setup_pll(&rcc_hsi_configs[RCC_CLOCK_3V3_84MHZ]);  // HSI, APB1=42MHz
+    rcc_periph_clock_enable(RCC_GPIOA);
+    rcc_periph_clock_enable(RCC_GPIOB);
+    rcc_periph_clock_enable(RCC_CAN1);
+    rcc_periph_clock_enable(RCC_USART2);
+}
+
+static void usart_setup(void)
+{
+    gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO2 | GPIO3);
+    gpio_set_af(GPIOA, GPIO_AF7, GPIO2 | GPIO3);
+    usart_set_baudrate(USART2, 115200);
+    usart_set_databits(USART2, 8);
+    usart_set_stopbits(USART2, USART_STOPBITS_1);
+    usart_set_mode(USART2, USART_MODE_TX);
+    usart_set_parity(USART2, USART_PARITY_NONE);
+    usart_set_flow_control(USART2, USART_FLOWCONTROL_NONE);
+    usart_enable(USART2);
+}
+
+static void uprint(const char *s)
+{
+    while (*s) usart_send_blocking(USART2, *s++);
+}
+
+static void uprint_hex(uint8_t b)
+{
+    const char *h = "0123456789ABCDEF";
+    usart_send_blocking(USART2, h[(b >> 4) & 0xF]);
+    usart_send_blocking(USART2, h[b & 0xF]);
+}
+
+static void gpio_setup(void)
+{
+    gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO5);   // LD2
+    gpio_mode_setup(GPIOB, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO8 | GPIO9);
+    gpio_set_af(GPIOB, GPIO_AF9, GPIO8 | GPIO9);
+}
+
+static void can_setup(void)
+{
+    can_reset(CAN1);
+    int ret = can_init(CAN1,
+             false, true, true, false, false, false, /* param 4 is NART: true */
+             CAN_BTR_SJW_1TQ, CAN_BTR_TS1_11TQ, CAN_BTR_TS2_2TQ,
+             24,           /* prescaler for 125 kbit/s at APB1=42MHz */
+             false,        /* loopback off */
+             false);       /* silent off */
+    
+    if (ret) uprint("CAN init FAILED\r\n");
+    else     uprint("CAN init OK (125k)\r\n");
+    
+    can_filter_id_mask_32bit_init(0, 0, 0, 0, true);   /* accept all into FIFO0 */
+}
+
+static void delay(volatile uint32_t n) { while (n--) __asm__("nop"); }
+
+/* returns 1 and prints if a frame was received, else 0 */
+static int check_rx(void)
+{
+    if (CAN_RF0R(CAN1) & CAN_RF0R_FMP0_MASK) {
+        uint32_t id; bool ext, rtr; uint8_t fmi, len, rx[8];
+        can_receive(CAN1, 0, true, &id, &ext, &rtr, &fmi, &len, rx, NULL);
+        uprint("RX id=");
+        uprint_hex((id >> 8) & 0xFF);
+        uprint_hex(id & 0xFF);
+        uprint(" data=");
+        for (int i = 0; i < len && i < 8; i++) {
+            uprint_hex(rx[i]);
+            usart_send_blocking(USART2, ' ');
+        }
+        uprint("\r\n");
+        gpio_toggle(GPIOA, GPIO5);
+        return 1;
+    }
+    return 0;
+}
+
+int main(void)
+{
+    clock_setup();
+    gpio_setup();
+    usart_setup();
+    uprint("\r\n=== Nucleo CAN ping-pong node ===\r\n");
+    can_setup();
+
+    uint8_t tx[8] = {0x11, 0x22, 0x33, 0x44, 0, 0, 0, 0};
+
+    /* Phase 1: keep pinging until the BBB answers */
+    uprint("Phase 1: pinging until BBB answers...\r\n");
+    int got_reply = 0;
+    while (!got_reply) {
+        int mb = can_transmit(CAN1, 0x321, false, false, 8, tx);
+        
+        if (mb < 0) {
+            uprint("PING failed - Transmit mailboxes full\r\n");
+        } else {
+            uprint("PING sent (0x321)\r\n");
+        }
+        
+        gpio_toggle(GPIOA, GPIO5);
+
+        /* wait ~1s for a reply, checking often */
+        for (int w = 0; w < 20 && !got_reply; w++) {
+            if (check_rx()) got_reply = 1;
+            delay(100000);
+        }
+    }
+
+    /* Phase 2: ping-pong - respond to each received frame */
+    uprint("Phase 2: ping-pong mode\r\n");
+    while (1) {
+        if (check_rx()) {
+            delay(500000);   /* small gap before replying */
+            int mb = can_transmit(CAN1, 0x321, false, false, 8, tx);
+            if (mb < 0) {
+                uprint("PONG failed - Mailboxes full\r\n");
+            } else {
+                uprint("PONG sent (0x321)\r\n");
+            }
+        }
+    }
+    return 0;
+}  
+</pre>
+
 
 ## Lab - CAN bring-up and sniffing
 
