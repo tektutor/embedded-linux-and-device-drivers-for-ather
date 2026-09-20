@@ -6,6 +6,28 @@
 
 <img width="752" height="780" alt="image" src="https://github.com/user-attachments/assets/93cfd391-99bb-40ad-b769-df9cc1a53c60" />
 
+Beaglebone Black CAN ping
+<pre>
+#!/bin/bash
+# BBB ping-pong: reply to each frame the Nucleo sends
+
+# Bring down the interface to allow configuration changes
+sudo ip link set can0 down
+
+# Bring up at 125 kbit/s to match the STM32, with auto-restart for bus-off recovery
+sudo ip link set can0 up type can bitrate 125000 restart-ms 100
+
+echo "BBB ready. Waiting for Nucleo frames on can0 at 125 kbps..."
+
+# Listen and respond
+candump can0 | while read -r line; do
+    echo "BBB RX: $line"
+    cansend can0 123#AABBCCDD
+    echo "BBB TX: 123#AABBCCDD"
+    sleep 0.2
+done   
+</pre>
+
 Nucleo Firmware code is
 <pre>
 // my-project.c - CAN1 ping-pong on Nucleo-F446RE at 125 kbit/s (libopencm3)
