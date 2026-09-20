@@ -341,5 +341,127 @@ Look for
 - The kernel (zImage or Image), device tree (.dtb), and rootfs tarball
 
 
+## Lab - Custom Recipe and Layer
+<pre>
+- Objective: create your own Yocto layer, write a recipe that compiles a simple "hello" C program, 
+  add it to your image, and rebuild so the program ends up in the target rootfs
+</pre>
 
+```
+cd ~/poky
+source oe-init-build-env      # puts you in ~/poky/build
+
+# Create your custom layer
+bitbake-layers create-layer ../meta-tektutor
+
+# bitbake-layers add-layer ../meta-tektutor
+bitbake-layers add-layer ../meta-tektutor
+bitbake-layers show-layers
+
+# create the recipe directory structure
+cd ~/poky/meta-tektutor
+mkdir -p recipes-apps/hello/files
+
+
+```
+#### nano recipes-apps/hello/files/hello.c
+
+<pre>
+#include <stdio.h>
+
+int main(void)
+{
+    printf("Hello from TekTutor, built with Yocto!\n");
+    return 0;
+}  
+</pre>
+
+#### write the recipe
+nano recipes-apps/hello/hello_1.0.bb
+<pre>
+SUMMARY = "A simple hello world application by TekTutor"
+DESCRIPTION = "Prints a greeting; demonstrates a custom Yocto recipe"
+LICENSE = "MIT"
+LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
+
+SRC_URI = "file://hello.c"
+
+S = "${WORKDIR}"
+
+do_compile() {
+    ${CC} ${CFLAGS} ${LDFLAGS} hello.c -o hello
+}
+
+do_install() {
+    install -d ${D}${bindir}
+    install -m 0755 hello ${D}${bindir}/hello
+}  
+</pre>
+
+#### Test build just the recipe
+```
+cd ~/poky/build
+bitbake hello
+```
+
+#### Add the recipe to the image
+```
+nano conf/local.conf
+```
+<pre>
+IMAGE_INSTALL:append = " hello"  
+</pre>
+
+rebuild the image
+```
+bitbake core-image-minimal
+```
+
+verify hello is in the image
+```
+# search the image's manifest/rootfs
+oe-pkgdata-util find-path /usr/bin/hello
+# or check the rootfs directly
+ls -l tmp/work/*/core-image-minimal/*/rootfs/usr/bin/hello 2>/dev/null
+```
+
+Or, once you flash and boot the image , run hello on the target
+<pre>
+# on the BeagleBone after booting the Yocto image
+hello
+# prints: Hello from TekTutor, built with Yocto!  
+</pre>
+
+
+## Lab - Flash anb boot
+
+Locate the image file
+```
+cd ~/poky/build/tmp/deploy/images/beaglebone-yocto/
+ls -lh core-image-minimal-beaglebone-yocto*.wic*
+```
+
+You are supposed to see
+<pre>
+core-image-minimal-beaglebone-yocto.wic (uncompressed), or
+core-image-minimal-beaglebone-yocto.wic.xz (compressed).  
+</pre>
+
+identify the SD card device
+```
+lsblk
+
+# unmount automount 
+sudo umount /dev/sdX* 2>/dev/null || true
+
+# flash the image
+sudo dd if=core-image-minimal-beaglebone-yocto.wic of=/dev/sdX bs=4M status=progress conv=fsync
+sync
+```
+
+If the image is compressed (.wic.xz), decompress on the fly while writing
+```
+xzcat core-image-minimal-beaglebone-yocto.wic.xz | sudo dd of=/dev/sdX bs=4M status=progress conv=fsync
+sync
+```
 
