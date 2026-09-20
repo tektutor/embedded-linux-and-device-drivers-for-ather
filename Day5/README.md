@@ -472,7 +472,7 @@ sudo apt update
 sudo apt install -y gawk wget git diffstat unzip texinfo gcc build-essential \
     chrpath socat cpio python3 python3-pip python3-pexpect xz-utils \
     debianutils iputils-ping python3-git python3-jinja2 python3-subunit \
-    zstd liblz4-tool file locales libacl1
+    zstd lz4 file locales libacl1
 sudo locale-gen en_US.UTF-8
 ```
 
@@ -534,7 +534,7 @@ mkdir -p recipes-apps/hello/files
 <pre>
 #include <stdio.h>
 
-int main(void)
+int main(void)canplayer -I candump-*.log
 {
     printf("Hello from TekTutor, built with Yocto!\n");
     return 0;
