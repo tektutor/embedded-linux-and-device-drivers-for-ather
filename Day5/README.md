@@ -598,7 +598,7 @@ hello
 </pre>
 
 
-## Lab - Flash anb boot
+## Lab - Flash and boot
 
 Locate the image file
 ```
